@@ -199,3 +199,27 @@ func containsHelper(s, substr string) bool {
 	}
 	return false
 }
+
+func TestAggregator_StopIdempotent(t *testing.T) {
+	monitors := []Monitor{
+		&mockMonitor{
+			name: "cpu",
+			data: &CPUState{UsagePercent: 50.0},
+		},
+	}
+
+	agg := NewAggregator(monitors, time.Second, testLogger())
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	agg.Start(ctx)
+
+	// Multiple Stop calls should not panic
+	for i := 0; i < 3; i++ {
+		err := agg.Stop()
+		if err != nil {
+			t.Errorf("Stop() returned error on call %d: %v", i+1, err)
+		}
+	}
+}

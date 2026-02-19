@@ -14,6 +14,7 @@ type Aggregator struct {
 	interval time.Duration
 	mu       sync.RWMutex
 	done     chan struct{}
+	stopOnce sync.Once
 	logger   *slog.Logger
 
 	ready     bool      // true after first successful collection
@@ -41,8 +42,10 @@ func (a *Aggregator) Start(ctx context.Context) error {
 }
 
 func (a *Aggregator) Stop() error {
-	close(a.done)
-	a.logger.Info("aggregator stopped")
+	a.stopOnce.Do(func() {
+		close(a.done)
+		a.logger.Info("aggregator stopped")
+	})
 	return nil
 }
 
