@@ -1,10 +1,12 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestRateLimit_Disabled(t *testing.T) {
@@ -265,4 +267,71 @@ func TestGetClientIP(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPerIPLimiter_Cleanup(t *testing.T) {
+	limiter := newPerIPLimiter(100, 10)
+
+	// Add some limiters
+	for i := 0; i < 5; i++ {
+		ip := fmt.Sprintf("192.168.1.%d", i)
+		limiter.getLimiter(ip)
+	}
+
+	// Verify limiters were added
+	limiter.mu.Lock()
+	if len(limiter.limiters) != 5 {
+		t.Errorf("expected 5 limiters, got %d", len(limiter.limiters))
+	}
+
+	// Set old last access times
+	oldTime := time.Now().Add(-perIPMaxAge - time.Minute)
+	for _, entry := range limiter.limiters {
+		entry.lastAccess = oldTime
+	}
+	limiter.mu.Unlock()
+
+	// Run cleanup
+	limiter.cleanup()
+
+	// All limiters should be removed
+	limiter.mu.Lock()
+	if len(limiter.limiters) != 0 {
+		t.Errorf("expected 0 limiters after cleanup, got %d", len(limiter.limiters))
+	}
+	limiter.mu.Unlock()
+
+	// Stop cleanup goroutine
+	close(limiter.done)
+}
+
+func TestPerIPLimiter_EvictOldest(t *testing.T) {
+	limiter := newPerIPLimiter(100, 10)
+
+	// Add limiters with different access times
+	now := time.Now()
+	limiter.mu.Lock()
+	for i := 0; i < 3; i++ {
+		ip := fmt.Sprintf("192.168.1.%d", i)
+		limiter.limiters[ip] = &ipLimiterEntry{
+			limiter:    nil,
+			lastAccess: now.Add(time.Duration(i) * time.Second),
+		}
+	}
+
+	// Evict oldest
+	limiter.evictOldest()
+
+	// Should have 2 limiters
+	if len(limiter.limiters) != 2 {
+		t.Errorf("expected 2 limiters, got %d", len(limiter.limiters))
+	}
+
+	// The oldest (192.168.1.0) should be gone
+	if _, exists := limiter.limiters["192.168.1.0"]; exists {
+		t.Error("oldest limiter should have been evicted")
+	}
+	limiter.mu.Unlock()
+
+	close(limiter.done)
 }
