@@ -7,6 +7,11 @@ type Monitor interface {
 	Collect() (any, error)
 }
 
+// Closer is an optional interface for monitors that need cleanup.
+type Closer interface {
+	Close() error
+}
+
 type CPUState struct {
 	UsagePercent float64   `json:"usage_percent"`
 	Cores        []float64 `json:"cores"`

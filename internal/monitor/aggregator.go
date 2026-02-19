@@ -44,6 +44,19 @@ func (a *Aggregator) Start(ctx context.Context) error {
 func (a *Aggregator) Stop() error {
 	a.stopOnce.Do(func() {
 		close(a.done)
+
+		// Close monitors that implement Closer interface
+		for _, m := range a.monitors {
+			if closer, ok := m.(Closer); ok {
+				if err := closer.Close(); err != nil {
+					a.logger.Warn("failed to close monitor",
+						"monitor", m.Name(),
+						"error", err,
+					)
+				}
+			}
+		}
+
 		a.logger.Info("aggregator stopped")
 	})
 	return nil
