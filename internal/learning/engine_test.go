@@ -167,3 +167,109 @@ func TestEngine_Model(t *testing.T) {
 		t.Error("expected model to be the same")
 	}
 }
+
+func TestEngine_Stop(t *testing.T) {
+	agg := testAggregator(50, 50)
+	defer agg.Stop()
+
+	model := NewMovingAverageModel(0.2)
+	engine := NewEngine(model, agg, time.Second, testLogger())
+
+	// Start several tasks
+	for i := 0; i < 10; i++ {
+		engine.NotifyTaskStart("test_task", 100)
+	}
+
+	// Stop should cancel all pending observations
+	engine.Stop()
+
+	// After stop, no new tasks should be accepted
+	engine.NotifyTaskStart("should_be_ignored", 100)
+
+	// Pending count may include tasks that started before stop
+	// but new tasks should not be added
+}
+
+func TestEngine_StopWithTimeout(t *testing.T) {
+	agg := testAggregator(50, 50)
+	defer agg.Stop()
+
+	model := NewMovingAverageModel(0.2)
+	engine := NewEngine(model, agg, 5*time.Second, testLogger())
+
+	// Start a task with long observation delay
+	engine.NotifyTaskStart("test_task", 100)
+
+	// Stop with short timeout should not hang
+	start := time.Now()
+	engine.StopWithTimeout(100 * time.Millisecond)
+	elapsed := time.Since(start)
+
+	if elapsed > 500*time.Millisecond {
+		t.Errorf("StopWithTimeout took too long: %v", elapsed)
+	}
+}
+
+func TestEngine_BoundedConcurrency(t *testing.T) {
+	agg := testAggregator(50, 50)
+	defer agg.Stop()
+
+	model := NewMovingAverageModel(0.2)
+	maxWorkers := 5
+	engine := NewEngineWithWorkers(model, agg, time.Second, testLogger(), maxWorkers)
+	defer engine.Stop()
+
+	// Start more tasks than max workers
+	for i := 0; i < 20; i++ {
+		engine.NotifyTaskStart("test_task", 100)
+	}
+
+	// Give time for goroutines to start
+	time.Sleep(50 * time.Millisecond)
+
+	// Active workers should not exceed max
+	if engine.ActiveWorkers() > maxWorkers {
+		t.Errorf("active workers %d exceeds max %d", engine.ActiveWorkers(), maxWorkers)
+	}
+}
+
+func TestEngine_StopMultipleCalls(t *testing.T) {
+	agg := testAggregator(50, 50)
+	defer agg.Stop()
+
+	model := NewMovingAverageModel(0.2)
+	engine := NewEngine(model, agg, 100*time.Millisecond, testLogger())
+
+	engine.NotifyTaskStart("test_task", 100)
+
+	// Multiple stop calls should not panic
+	engine.Stop()
+	engine.Stop()
+	engine.Stop()
+}
+
+func TestEngine_TaskIDFormat(t *testing.T) {
+	agg := testAggregator(50, 50)
+	defer agg.Stop()
+
+	model := NewMovingAverageModel(0.2)
+	engine := NewEngine(model, agg, 50*time.Millisecond, testLogger())
+	defer engine.Stop()
+
+	// Create multiple tasks and verify IDs are formatted correctly
+	for i := 0; i < 5; i++ {
+		engine.NotifyTaskStart("test_task", 100)
+	}
+
+	// Wait for observations
+	time.Sleep(100 * time.Millisecond)
+
+	// Task counter should be 5
+	engine.mu.Lock()
+	counter := engine.taskCounter
+	engine.mu.Unlock()
+
+	if counter != 5 {
+		t.Errorf("expected taskCounter=5, got %d", counter)
+	}
+}

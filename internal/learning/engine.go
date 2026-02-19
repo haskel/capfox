@@ -1,11 +1,18 @@
 package learning
 
 import (
+	"context"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/haskel/capfox/internal/monitor"
+)
+
+const (
+	// DefaultMaxWorkers is the default number of concurrent observation workers.
+	DefaultMaxWorkers = 100
 )
 
 // Engine coordinates learning from task executions.
@@ -15,10 +22,18 @@ type Engine struct {
 	logger     *slog.Logger
 
 	observationDelay time.Duration
+	maxWorkers       int
 
 	mu             sync.Mutex
 	pendingTasks   map[string]*pendingTask
 	taskCounter    int64
+
+	// Goroutine management
+	ctx        context.Context
+	cancel     context.CancelFunc
+	wg         sync.WaitGroup
+	workerSem  chan struct{} // semaphore for limiting concurrent workers
+	stopped    bool
 }
 
 // pendingTask holds state for a task awaiting observation.
@@ -32,12 +47,27 @@ type pendingTask struct {
 
 // NewEngine creates a new learning engine.
 func NewEngine(model Model, aggregator *monitor.Aggregator, observationDelay time.Duration, logger *slog.Logger) *Engine {
+	return NewEngineWithWorkers(model, aggregator, observationDelay, logger, DefaultMaxWorkers)
+}
+
+// NewEngineWithWorkers creates a new learning engine with custom worker limit.
+func NewEngineWithWorkers(model Model, aggregator *monitor.Aggregator, observationDelay time.Duration, logger *slog.Logger, maxWorkers int) *Engine {
+	if maxWorkers <= 0 {
+		maxWorkers = DefaultMaxWorkers
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
 	return &Engine{
 		model:            model,
 		aggregator:       aggregator,
 		logger:           logger,
 		observationDelay: observationDelay,
+		maxWorkers:       maxWorkers,
 		pendingTasks:     make(map[string]*pendingTask),
+		ctx:              ctx,
+		cancel:           cancel,
+		workerSem:        make(chan struct{}, maxWorkers),
 	}
 }
 
@@ -45,8 +75,12 @@ func NewEngine(model Model, aggregator *monitor.Aggregator, observationDelay tim
 // It captures a baseline of system state and schedules an observation.
 func (e *Engine) NotifyTaskStart(task string, complexity int) {
 	e.mu.Lock()
+	if e.stopped {
+		e.mu.Unlock()
+		return
+	}
 	e.taskCounter++
-	taskID := task + "_" + time.Now().Format("20060102150405") + "_" + string(rune(e.taskCounter%1000))
+	taskID := task + "_" + time.Now().Format("20060102150405") + "_" + formatCounter(e.taskCounter)
 
 	baseline := e.aggregator.GetState()
 
@@ -66,11 +100,33 @@ func (e *Engine) NotifyTaskStart(task string, complexity int) {
 		"delay", e.observationDelay,
 	)
 
-	// Schedule observation after delay
+	// Schedule observation after delay with bounded concurrency
+	e.wg.Add(1)
 	go func() {
-		time.Sleep(e.observationDelay)
-		e.observe(taskID)
+		defer e.wg.Done()
+
+		// Acquire semaphore slot (bounded concurrency)
+		select {
+		case e.workerSem <- struct{}{}:
+			// Got slot
+		case <-e.ctx.Done():
+			return
+		}
+		defer func() { <-e.workerSem }()
+
+		// Wait for observation delay or cancellation
+		select {
+		case <-time.After(e.observationDelay):
+			e.observe(taskID)
+		case <-e.ctx.Done():
+			return
+		}
 	}()
+}
+
+// formatCounter formats a counter value as a zero-padded string.
+func formatCounter(n int64) string {
+	return fmt.Sprintf("%03d", n%1000)
 }
 
 // observe captures the impact of a task after the observation delay.
@@ -154,4 +210,56 @@ func (e *Engine) PendingCount() int {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	return len(e.pendingTasks)
+}
+
+// Stop gracefully shuts down the engine, waiting for pending observations.
+func (e *Engine) Stop() {
+	e.mu.Lock()
+	if e.stopped {
+		e.mu.Unlock()
+		return
+	}
+	e.stopped = true
+	e.mu.Unlock()
+
+	// Cancel all pending goroutines
+	e.cancel()
+
+	// Wait for all goroutines to finish
+	e.wg.Wait()
+
+	e.logger.Debug("learning engine stopped")
+}
+
+// StopWithTimeout stops the engine with a timeout.
+func (e *Engine) StopWithTimeout(timeout time.Duration) {
+	e.mu.Lock()
+	if e.stopped {
+		e.mu.Unlock()
+		return
+	}
+	e.stopped = true
+	e.mu.Unlock()
+
+	// Cancel all pending goroutines
+	e.cancel()
+
+	// Wait with timeout
+	done := make(chan struct{})
+	go func() {
+		e.wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		e.logger.Debug("learning engine stopped gracefully")
+	case <-time.After(timeout):
+		e.logger.Warn("learning engine stop timed out", "timeout", timeout)
+	}
+}
+
+// ActiveWorkers returns the current number of active observation workers.
+func (e *Engine) ActiveWorkers() int {
+	return len(e.workerSem)
 }
