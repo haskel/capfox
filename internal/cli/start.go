@@ -199,5 +199,18 @@ func runStart(cmd *cobra.Command, args []string) error {
 
 func writePIDFile(path string) error {
 	pid := os.Getpid()
-	return os.WriteFile(path, []byte(fmt.Sprintf("%d", pid)), 0644)
+	tempPath := path + ".tmp"
+
+	// Write to temp file first
+	if err := os.WriteFile(tempPath, []byte(fmt.Sprintf("%d", pid)), 0644); err != nil {
+		return err
+	}
+
+	// Atomic rename
+	if err := os.Rename(tempPath, path); err != nil {
+		os.Remove(tempPath)
+		return err
+	}
+
+	return nil
 }
