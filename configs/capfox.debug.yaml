@@ -1,0 +1,60 @@
+# Capfox Debug Configuration
+# Use this config for testing learning pipeline
+
+server:
+  host: "0.0.0.0"
+  port: 8080
+  pid_file: "/tmp/capfox.pid"
+  profiling:
+    enabled: true
+
+auth:
+  enabled: false
+
+# Enable debug mode for metrics injection
+debug:
+  enabled: true
+
+thresholds:
+  cpu:
+    max_percent: 80
+  memory:
+    max_percent: 85
+  gpu:
+    max_percent: 90
+  vram:
+    max_percent: 85
+  storage:
+    min_free_gb: 10
+
+monitoring:
+  interval_ms: 500  # Faster for testing
+  paths:
+    - "/"
+
+persistence:
+  data_dir: "/tmp/capfox_debug"
+  flush_interval_sec: 10
+
+logging:
+  level: "debug"
+  format: "text"
+
+learning:
+  model: "moving_average"
+  observation_delay_sec: 1  # Short delay for testing
+
+decision:
+  strategy: "predictive"
+  model: "linear"
+  fallback_strategy: "threshold"
+  min_observations: 10  # Minimum for reliable predictions (research: N >= 10)
+  safety_buffer_percent: 10
+  model_params:
+    alpha: 0.3
+    degree: 2
+    n_estimators: 10
+    max_depth: 3
+    retrain_interval: "1m"
+    min_retrain_samples: 5
+    max_buffer_size: 1000

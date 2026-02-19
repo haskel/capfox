@@ -23,6 +23,9 @@ type Server struct {
 	logger          *slog.Logger
 	version         string
 	authConfig      *middleware.AuthConfig
+
+	// V2 components (new decision engine)
+	v2 *V2Components
 }
 
 func New(cfg *config.Config, agg *monitor.Aggregator, cm *capacity.Manager, le *learning.Engine, logger *slog.Logger, version string) *Server {

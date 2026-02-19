@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  capfox:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: capfox-profiling
+    ports:
+      - "8080:8080"
+    volumes:
+      - capfox-data:/app/data
+      - ./configs/capfox.profiling.yaml:/app/configs/capfox.yaml:ro
+    environment:
+      - TZ=UTC
+      - GOGC=100
+      - GODEBUG=gctrace=1
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 512M
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  capfox-data:
+    driver: local

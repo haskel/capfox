@@ -10,12 +10,25 @@ type Config struct {
 	Persistence PersistenceConfig `yaml:"persistence"`
 	Logging     LoggingConfig     `yaml:"logging"`
 	Learning    LearningConfig    `yaml:"learning"`
+	Decision    DecisionConfig    `yaml:"decision"`
+	Debug       DebugConfig       `yaml:"debug"`
+}
+
+// DebugConfig holds debug mode configuration.
+type DebugConfig struct {
+	// Enabled allows debug endpoints like /debug/inject-metrics
+	Enabled bool `yaml:"enabled"`
 }
 
 type ServerConfig struct {
-	Host    string `yaml:"host"`
-	Port    int    `yaml:"port"`
-	PIDFile string `yaml:"pid_file"`
+	Host      string          `yaml:"host"`
+	Port      int             `yaml:"port"`
+	PIDFile   string          `yaml:"pid_file"`
+	Profiling ProfilingConfig `yaml:"profiling"`
+}
+
+type ProfilingConfig struct {
+	Enabled bool `yaml:"enabled"`
 }
 
 type AuthConfig struct {
@@ -70,6 +83,43 @@ type LoggingConfig struct {
 type LearningConfig struct {
 	Model               string `yaml:"model"`
 	ObservationDelaySec int    `yaml:"observation_delay_sec"`
+}
+
+// DecisionConfig holds decision engine configuration.
+type DecisionConfig struct {
+	// Strategy type: threshold, predictive, conservative, queue_aware
+	Strategy string `yaml:"strategy"`
+
+	// Model type: none, moving_average, linear, polynomial, gradient_boosting
+	Model string `yaml:"model"`
+
+	// Fallback strategy when insufficient data
+	FallbackStrategy string `yaml:"fallback_strategy"`
+
+	// Minimum observations before using predictions
+	MinObservations int `yaml:"min_observations"`
+
+	// Safety buffer for conservative strategy (percentage, e.g., 10 for 10%)
+	SafetyBufferPercent float64 `yaml:"safety_buffer_percent"`
+
+	// Model-specific parameters
+	ModelParams ModelParamsConfig `yaml:"model_params"`
+}
+
+// ModelParamsConfig holds model-specific parameters.
+type ModelParamsConfig struct {
+	// MovingAverage: smoothing factor (0.1-0.3)
+	Alpha float64 `yaml:"alpha"`
+
+	// Polynomial: degree (2-3)
+	Degree int `yaml:"degree"`
+
+	// GradientBoosting
+	NEstimators       int    `yaml:"n_estimators"`
+	MaxDepth          int    `yaml:"max_depth"`
+	RetrainInterval   string `yaml:"retrain_interval"`
+	MinRetrainSamples int    `yaml:"min_retrain_samples"`
+	MaxBufferSize     int    `yaml:"max_buffer_size"`
 }
 
 func (c *Config) MonitoringInterval() time.Duration {

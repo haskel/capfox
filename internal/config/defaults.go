@@ -45,5 +45,21 @@ func Default() *Config {
 			Model:               "moving_average",
 			ObservationDelaySec: 5,
 		},
+		Decision: DecisionConfig{
+			Strategy:            "predictive",
+			Model:               "linear",
+			FallbackStrategy:    "threshold",
+			MinObservations:     5,
+			SafetyBufferPercent: 10.0,
+			ModelParams: ModelParamsConfig{
+				Alpha:             0.2,
+				Degree:            2,
+				NEstimators:       100,
+				MaxDepth:          5,
+				RetrainInterval:   "1h",
+				MinRetrainSamples: 50,
+				MaxBufferSize:     10000,
+			},
+		},
 	}
 }

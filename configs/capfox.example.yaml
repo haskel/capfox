@@ -4,6 +4,8 @@ server:
   host: "0.0.0.0"
   port: 8080
   pid_file: "/var/run/capfox.pid"
+  profiling:
+    enabled: false  # Enable pprof endpoints at /debug/pprof/
 
 auth:
   enabled: false
@@ -39,3 +41,45 @@ logging:
 learning:
   model: "moving_average"  # moving_average, linear_regression
   observation_delay_sec: 5
+
+# Decision Engine Configuration
+decision:
+  # Strategy for making decisions
+  # - threshold: only check current state against thresholds
+  # - predictive: predict future state and check thresholds
+  # - conservative: predictive + safety buffer
+  # - queue_aware: consider pending tasks
+  strategy: "predictive"
+
+  # Prediction model
+  # - none: no prediction (for threshold strategy)
+  # - moving_average: simple average (doesn't use complexity)
+  # - linear: linear regression (complexity affects prediction)
+  # - polynomial: polynomial regression
+  # - gradient_boosting: ML-based (batch training)
+  model: "linear"
+
+  # Fallback when insufficient data for prediction
+  fallback_strategy: "threshold"
+
+  # Minimum observations before using predictions
+  # Research shows N >= 10 minimum, N >= 25 recommended for reliable predictions
+  min_observations: 10
+
+  # Safety buffer for conservative strategy (percentage)
+  safety_buffer_percent: 10
+
+  # Model-specific parameters
+  model_params:
+    # Moving average smoothing factor (0.1-0.3)
+    alpha: 0.2
+
+    # Polynomial degree (2-3)
+    degree: 2
+
+    # Gradient boosting parameters
+    n_estimators: 100
+    max_depth: 5
+    retrain_interval: "1h"
+    min_retrain_samples: 50
+    max_buffer_size: 10000

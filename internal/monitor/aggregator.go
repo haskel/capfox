@@ -54,6 +54,69 @@ func (a *Aggregator) GetStateJSON() ([]byte, error) {
 	return json.Marshal(state)
 }
 
+// InjectedMetrics represents metrics to inject for testing/debugging.
+type InjectedMetrics struct {
+	CPU         *float64 `json:"cpu,omitempty"`          // CPU usage percent
+	Memory      *float64 `json:"memory,omitempty"`       // Memory usage percent
+	GPUUsage    *float64 `json:"gpu_usage,omitempty"`    // GPU usage percent (first GPU)
+	VRAMUsage   *float64 `json:"vram_usage,omitempty"`   // VRAM usage percent (first GPU)
+	GPUIndex    int      `json:"gpu_index,omitempty"`    // Which GPU to modify (default 0)
+}
+
+// InjectMetrics overrides current metrics with injected values.
+// Only non-nil fields are applied. Used for testing/debugging.
+func (a *Aggregator) InjectMetrics(metrics *InjectedMetrics) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	if metrics.CPU != nil {
+		a.state.CPU.UsagePercent = *metrics.CPU
+		// Update all cores proportionally
+		for i := range a.state.CPU.Cores {
+			a.state.CPU.Cores[i] = *metrics.CPU
+		}
+	}
+
+	if metrics.Memory != nil {
+		a.state.Memory.UsagePercent = *metrics.Memory
+		// Calculate used bytes based on percentage
+		a.state.Memory.UsedBytes = uint64(float64(a.state.Memory.TotalBytes) * (*metrics.Memory / 100))
+	}
+
+	// GPU metrics
+	gpuIdx := metrics.GPUIndex
+	if metrics.GPUUsage != nil || metrics.VRAMUsage != nil {
+		// Ensure GPU exists
+		if gpuIdx >= len(a.state.GPUs) {
+			// Create a synthetic GPU for testing
+			for len(a.state.GPUs) <= gpuIdx {
+				a.state.GPUs = append(a.state.GPUs, GPUState{
+					Index:          len(a.state.GPUs),
+					Name:           "Debug GPU",
+					VRAMTotalBytes: 24 * 1024 * 1024 * 1024, // 24GB default
+				})
+			}
+		}
+
+		if metrics.GPUUsage != nil {
+			a.state.GPUs[gpuIdx].UsagePercent = *metrics.GPUUsage
+		}
+		if metrics.VRAMUsage != nil {
+			a.state.GPUs[gpuIdx].VRAMUsedBytes = uint64(
+				float64(a.state.GPUs[gpuIdx].VRAMTotalBytes) * (*metrics.VRAMUsage / 100),
+			)
+		}
+	}
+
+	a.state.Timestamp = time.Now()
+	a.logger.Debug("metrics injected",
+		"cpu", metrics.CPU,
+		"memory", metrics.Memory,
+		"gpu_usage", metrics.GPUUsage,
+		"vram_usage", metrics.VRAMUsage,
+	)
+}
+
 func (a *Aggregator) runLoop(ctx context.Context) {
 	ticker := time.NewTicker(a.interval)
 	defer ticker.Stop()
