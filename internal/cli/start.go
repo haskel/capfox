@@ -129,31 +129,44 @@ func runStart(cmd *cobra.Command, args []string) error {
 	// Create and start server
 	srv := server.New(cfg, agg, cm, le, log, Version)
 
+	// Signal channels
+	sighupCh := make(chan os.Signal, 1)
+	sigCh := make(chan os.Signal, 1)
+	shutdownDone := make(chan struct{})
+
+	signal.Notify(sighupCh, syscall.SIGHUP)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
 	// Handle SIGHUP for hot-reload
 	go func() {
-		sighupCh := make(chan os.Signal, 1)
-		signal.Notify(sighupCh, syscall.SIGHUP)
+		for {
+			select {
+			case <-sighupCh:
+				log.Info("SIGHUP received, reloading configuration")
 
-		for range sighupCh {
-			log.Info("SIGHUP received, reloading configuration")
+				newCfg := config.LoadOrDefault(cfgFile)
+				if err := newCfg.Validate(); err != nil {
+					log.Error("invalid configuration, reload aborted", "error", err)
+					continue
+				}
 
-			newCfg := config.LoadOrDefault(cfgFile)
-			if err := newCfg.Validate(); err != nil {
-				log.Error("invalid configuration, reload aborted", "error", err)
-				continue
+				srv.ReloadConfig(newCfg)
+			case <-shutdownDone:
+				return
 			}
-
-			srv.ReloadConfig(newCfg)
 		}
 	}()
 
 	// Handle shutdown signals
 	go func() {
-		sigCh := make(chan os.Signal, 1)
-		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 		<-sigCh
 
 		log.Info("shutdown signal received")
+
+		// Stop receiving signals
+		signal.Stop(sighupCh)
+		signal.Stop(sigCh)
+		close(shutdownDone)
 
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer shutdownCancel()
@@ -166,6 +179,9 @@ func runStart(cmd *cobra.Command, args []string) error {
 		if err := store.Stop(); err != nil {
 			log.Error("storage shutdown error", "error", err)
 		}
+
+		// Stop learning engine
+		le.Stop()
 
 		agg.Stop()
 		cancel()
