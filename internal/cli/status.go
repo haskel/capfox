@@ -46,12 +46,16 @@ func runStatus(cmd *cobra.Command, args []string) error {
 
 	if cpu, ok := result["cpu"].(map[string]any); ok {
 		fmt.Printf("\nCPU:\n")
-		fmt.Printf("  Usage: %.1f%%\n", cpu["usage_percent"])
+		if usage, ok := cpu["usage_percent"].(float64); ok {
+			fmt.Printf("  Usage: %.1f%%\n", usage)
+		}
 	}
 
 	if mem, ok := result["memory"].(map[string]any); ok {
 		fmt.Printf("\nMemory:\n")
-		fmt.Printf("  Usage: %.1f%%\n", mem["usage_percent"])
+		if usage, ok := mem["usage_percent"].(float64); ok {
+			fmt.Printf("  Usage: %.1f%%\n", usage)
+		}
 		if total, ok := mem["total_bytes"].(float64); ok {
 			fmt.Printf("  Total: %.1f GB\n", total/1024/1024/1024)
 		}
@@ -64,9 +68,11 @@ func runStatus(cmd *cobra.Command, args []string) error {
 		fmt.Printf("\nStorage:\n")
 		for path, info := range storage {
 			if diskInfo, ok := info.(map[string]any); ok {
-				total := diskInfo["total_bytes"].(float64) / 1024 / 1024 / 1024
-				free := diskInfo["free_bytes"].(float64) / 1024 / 1024 / 1024
-				fmt.Printf("  %s: %.1f GB free / %.1f GB total\n", path, free, total)
+				total, totalOK := diskInfo["total_bytes"].(float64)
+				free, freeOK := diskInfo["free_bytes"].(float64)
+				if totalOK && freeOK {
+					fmt.Printf("  %s: %.1f GB free / %.1f GB total\n", path, free/1024/1024/1024, total/1024/1024/1024)
+				}
 			}
 		}
 	}
@@ -75,12 +81,14 @@ func runStatus(cmd *cobra.Command, args []string) error {
 		fmt.Printf("\nGPU:\n")
 		for i, gpu := range gpus {
 			if g, ok := gpu.(map[string]any); ok {
-				fmt.Printf("  GPU %d: %.1f%% usage", i, g["usage_percent"])
+				usage, _ := g["usage_percent"].(float64)
+				fmt.Printf("  GPU %d: %.1f%% usage", i, usage)
 				if vramTotal, ok := g["vram_total_bytes"].(float64); ok && vramTotal > 0 {
-					vramUsed := g["vram_used_bytes"].(float64)
-					fmt.Printf(", VRAM: %.1f / %.1f GB",
-						vramUsed/1024/1024/1024,
-						vramTotal/1024/1024/1024)
+					if vramUsed, ok := g["vram_used_bytes"].(float64); ok {
+						fmt.Printf(", VRAM: %.1f / %.1f GB",
+							vramUsed/1024/1024/1024,
+							vramTotal/1024/1024/1024)
+					}
 				}
 				fmt.Println()
 			}
@@ -89,8 +97,12 @@ func runStatus(cmd *cobra.Command, args []string) error {
 
 	if proc, ok := result["process"].(map[string]any); ok {
 		fmt.Printf("\nProcesses:\n")
-		fmt.Printf("  Total: %.0f\n", proc["total_processes"])
-		fmt.Printf("  Threads: %.0f\n", proc["total_threads"])
+		if total, ok := proc["total_processes"].(float64); ok {
+			fmt.Printf("  Total: %.0f\n", total)
+		}
+		if threads, ok := proc["total_threads"].(float64); ok {
+			fmt.Printf("  Threads: %.0f\n", threads)
+		}
 	}
 
 	return nil
