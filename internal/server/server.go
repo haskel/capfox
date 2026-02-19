@@ -68,6 +68,7 @@ func New(cfg *config.Config, agg *monitor.Aggregator, cm *capacity.Manager, le *
 	handler := middleware.Chain(
 		mux,
 		middleware.Recovery(logger),
+		middleware.SecurityHeaders(),
 		middleware.RateLimit(rateLimitConfig),
 		middleware.MaxBody(0), // 1MB limit
 		middleware.Logging(logger),
