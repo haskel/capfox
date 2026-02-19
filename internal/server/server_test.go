@@ -27,8 +27,8 @@ func TestServer_Integration(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	agg.Start(ctx)
-	defer agg.Stop()
+	_ = agg.Start(ctx)
+	defer func() { _ = agg.Stop() }()
 
 	cm := capacity.NewManager(agg, cfg.Thresholds)
 	model := learning.NewMovingAverageModel(0.2)

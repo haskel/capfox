@@ -61,7 +61,7 @@ func testAggregator(cpuPercent, memPercent float64) *monitor.Aggregator {
 
 func TestManager_Ask_Allowed(t *testing.T) {
 	agg := testAggregator(50, 50)
-	defer agg.Stop()
+	defer func() { _ = agg.Stop() }()
 
 	manager := NewManager(agg, defaultThresholds())
 
@@ -83,7 +83,7 @@ func TestManager_Ask_Allowed(t *testing.T) {
 
 func TestManager_Ask_Denied(t *testing.T) {
 	agg := testAggregator(90, 50) // CPU overload
-	defer agg.Stop()
+	defer func() { _ = agg.Stop() }()
 
 	manager := NewManager(agg, defaultThresholds())
 
@@ -106,7 +106,7 @@ func TestManager_Ask_Denied(t *testing.T) {
 
 func TestManager_Ask_WithReasons(t *testing.T) {
 	agg := testAggregator(90, 90) // CPU and Memory overload
-	defer agg.Stop()
+	defer func() { _ = agg.Stop() }()
 
 	manager := NewManager(agg, defaultThresholds())
 
@@ -143,7 +143,7 @@ func TestManager_Ask_WithReasons(t *testing.T) {
 
 func TestManager_Ask_WithResources(t *testing.T) {
 	agg := testAggregator(50, 50)
-	defer agg.Stop()
+	defer func() { _ = agg.Stop() }()
 
 	manager := NewManager(agg, defaultThresholds())
 
@@ -167,7 +167,7 @@ func TestManager_Ask_WithResources(t *testing.T) {
 
 func TestManager_UpdateThresholds(t *testing.T) {
 	agg := testAggregator(85, 50) // CPU at 85%
-	defer agg.Stop()
+	defer func() { _ = agg.Stop() }()
 
 	manager := NewManager(agg, defaultThresholds())
 
