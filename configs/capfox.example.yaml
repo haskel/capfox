@@ -42,6 +42,16 @@ learning:
   model: "moving_average"  # moving_average, linear_regression
   observation_delay_sec: 5
 
+# Debug Mode Configuration
+# WARNING: Debug mode exposes sensitive information. Always use authentication!
+debug:
+  enabled: false
+  auth:
+    # Bearer token for debug endpoint authentication
+    # If set, requires "Authorization: Bearer <token>" header
+    # If not set, falls back to main auth credentials
+    token: "${CAPFOX_DEBUG_TOKEN}"
+
 # Decision Engine Configuration
 decision:
   # Strategy for making decisions

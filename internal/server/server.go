@@ -47,11 +47,22 @@ func New(cfg *config.Config, agg *monitor.Aggregator, cm *capacity.Manager, le *
 
 	mux := s.setupRoutes()
 
+	// Build list of paths to exclude from main auth
+	authExcludes := []string{"/health", "/ready"}
+
+	// If debug endpoints have their own auth (via token), exclude from main auth
+	// to avoid double authentication
+	if cfg.Debug.Auth.Token != "" {
+		if cfg.Debug.Enabled || cfg.Server.Profiling.Enabled {
+			authExcludes = append(authExcludes, "/debug/*")
+		}
+	}
+
 	handler := middleware.Chain(
 		mux,
 		middleware.Recovery(logger),
 		middleware.Logging(logger),
-		middleware.Auth(authConfig, "/health"), // Exclude /health from auth
+		middleware.Auth(authConfig, authExcludes...),
 	)
 
 	s.httpServer = &http.Server{

@@ -3,6 +3,7 @@ package middleware
 import (
 	"crypto/subtle"
 	"net/http"
+	"strings"
 )
 
 // AuthConfig holds authentication configuration.
@@ -14,10 +15,17 @@ type AuthConfig struct {
 
 // Auth creates a Basic Auth middleware.
 // Paths in excludePaths will be excluded from authentication.
+// Paths ending with "*" are treated as prefixes (e.g., "/debug/*" matches "/debug/foo").
 func Auth(config *AuthConfig, excludePaths ...string) Middleware {
-	excludeSet := make(map[string]bool)
+	exactExcludes := make(map[string]bool)
+	var prefixExcludes []string
+
 	for _, path := range excludePaths {
-		excludeSet[path] = true
+		if strings.HasSuffix(path, "*") {
+			prefixExcludes = append(prefixExcludes, strings.TrimSuffix(path, "*"))
+		} else {
+			exactExcludes[path] = true
+		}
 	}
 
 	return func(next http.Handler) http.Handler {
@@ -28,10 +36,18 @@ func Auth(config *AuthConfig, excludePaths ...string) Middleware {
 				return
 			}
 
-			// Skip auth for excluded paths
-			if excludeSet[r.URL.Path] {
+			// Skip auth for excluded exact paths
+			if exactExcludes[r.URL.Path] {
 				next.ServeHTTP(w, r)
 				return
+			}
+
+			// Skip auth for excluded prefixes
+			for _, prefix := range prefixExcludes {
+				if strings.HasPrefix(r.URL.Path, prefix) {
+					next.ServeHTTP(w, r)
+					return
+				}
 			}
 
 			// Check Basic Auth

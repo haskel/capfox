@@ -18,6 +18,17 @@ type Config struct {
 type DebugConfig struct {
 	// Enabled allows debug endpoints like /debug/inject-metrics
 	Enabled bool `yaml:"enabled"`
+	// Auth holds debug-specific authentication.
+	// If set, debug endpoints require this token.
+	// If not set but main auth is enabled, main auth is used.
+	Auth DebugAuthConfig `yaml:"auth"`
+}
+
+// DebugAuthConfig holds debug endpoint authentication.
+type DebugAuthConfig struct {
+	// Token for Bearer authentication on debug endpoints.
+	// If empty, falls back to main auth.
+	Token string `yaml:"token"`
 }
 
 type ServerConfig struct {

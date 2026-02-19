@@ -36,6 +36,10 @@ func (c *Config) Validate() error {
 		errs = append(errs, fmt.Errorf("auth: %w", err))
 	}
 
+	if err := c.validateDebugSecurity(); err != nil {
+		errs = append(errs, fmt.Errorf("debug security: %w", err))
+	}
+
 	return errors.Join(errs...)
 }
 
@@ -134,5 +138,38 @@ func (a *AuthConfig) Validate() error {
 			return fmt.Errorf("password cannot be empty when auth is enabled")
 		}
 	}
+	return nil
+}
+
+// validateDebugSecurity checks that debug/profiling endpoints have authentication.
+func (c *Config) validateDebugSecurity() error {
+	debugEnabled := c.Debug.Enabled
+	profilingEnabled := c.Server.Profiling.Enabled
+
+	// If neither debug nor profiling is enabled, no security check needed
+	if !debugEnabled && !profilingEnabled {
+		return nil
+	}
+
+	// Check if any authentication is configured
+	hasMainAuth := c.Auth.Enabled
+	hasDebugToken := c.Debug.Auth.Token != ""
+
+	if !hasMainAuth && !hasDebugToken {
+		var features []string
+		if debugEnabled {
+			features = append(features, "debug mode")
+		}
+		if profilingEnabled {
+			features = append(features, "profiling")
+		}
+
+		return fmt.Errorf(
+			"%s enabled without authentication; "+
+				"set auth.enabled=true with credentials, or set debug.auth.token",
+			features[0],
+		)
+	}
+
 	return nil
 }

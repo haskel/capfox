@@ -184,3 +184,90 @@ func TestValidateMonitoring(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateDebugSecurity(t *testing.T) {
+	tests := []struct {
+		name            string
+		debugEnabled    bool
+		profilingEnabled bool
+		authEnabled     bool
+		debugToken      string
+		wantErr         bool
+	}{
+		{
+			name:            "no debug no profiling",
+			debugEnabled:    false,
+			profilingEnabled: false,
+			authEnabled:     false,
+			debugToken:      "",
+			wantErr:         false,
+		},
+		{
+			name:            "debug enabled with main auth",
+			debugEnabled:    true,
+			profilingEnabled: false,
+			authEnabled:     true,
+			debugToken:      "",
+			wantErr:         false,
+		},
+		{
+			name:            "debug enabled with debug token",
+			debugEnabled:    true,
+			profilingEnabled: false,
+			authEnabled:     false,
+			debugToken:      "secret-token",
+			wantErr:         false,
+		},
+		{
+			name:            "debug enabled no auth",
+			debugEnabled:    true,
+			profilingEnabled: false,
+			authEnabled:     false,
+			debugToken:      "",
+			wantErr:         true,
+		},
+		{
+			name:            "profiling enabled with main auth",
+			debugEnabled:    false,
+			profilingEnabled: true,
+			authEnabled:     true,
+			debugToken:      "",
+			wantErr:         false,
+		},
+		{
+			name:            "profiling enabled no auth",
+			debugEnabled:    false,
+			profilingEnabled: true,
+			authEnabled:     false,
+			debugToken:      "",
+			wantErr:         true,
+		},
+		{
+			name:            "both enabled with token",
+			debugEnabled:    true,
+			profilingEnabled: true,
+			authEnabled:     false,
+			debugToken:      "token",
+			wantErr:         false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := Default()
+			cfg.Debug.Enabled = tt.debugEnabled
+			cfg.Server.Profiling.Enabled = tt.profilingEnabled
+			cfg.Auth.Enabled = tt.authEnabled
+			if tt.authEnabled {
+				cfg.Auth.User = "admin"
+				cfg.Auth.Password = "secret"
+			}
+			cfg.Debug.Auth.Token = tt.debugToken
+
+			err := cfg.validateDebugSecurity()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("wantErr=%v, got %v", tt.wantErr, err)
+			}
+		})
+	}
+}

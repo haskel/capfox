@@ -3,30 +3,12 @@ package server
 import (
 	"net/http"
 	"net/http/pprof"
+
+	"github.com/haskel/capfox/internal/server/middleware"
 )
 
 func (s *Server) setupRoutes() *http.ServeMux {
 	mux := http.NewServeMux()
-
-	// Profiling routes (if enabled)
-	if s.config.Server.Profiling.Enabled {
-		s.logger.Info("profiling endpoints enabled at /debug/pprof/")
-		// Use {$} to match exact paths and {path...} for prefix matching
-		mux.HandleFunc("GET /debug/pprof/{$}", pprof.Index)
-		mux.HandleFunc("GET /debug/pprof/cmdline", pprof.Cmdline)
-		mux.HandleFunc("GET /debug/pprof/profile", pprof.Profile)
-		mux.HandleFunc("GET /debug/pprof/symbol", pprof.Symbol)
-		mux.HandleFunc("POST /debug/pprof/symbol", pprof.Symbol)
-		mux.HandleFunc("GET /debug/pprof/trace", pprof.Trace)
-		mux.HandleFunc("GET /debug/pprof/heap", pprof.Handler("heap").ServeHTTP)
-		mux.HandleFunc("GET /debug/pprof/goroutine", pprof.Handler("goroutine").ServeHTTP)
-		mux.HandleFunc("GET /debug/pprof/allocs", pprof.Handler("allocs").ServeHTTP)
-		mux.HandleFunc("GET /debug/pprof/block", pprof.Handler("block").ServeHTTP)
-		mux.HandleFunc("GET /debug/pprof/mutex", pprof.Handler("mutex").ServeHTTP)
-		mux.HandleFunc("GET /debug/pprof/threadcreate", pprof.Handler("threadcreate").ServeHTTP)
-		// Catch-all for index to handle /debug/pprof/ with trailing paths
-		mux.HandleFunc("GET /debug/pprof/{name...}", pprof.Index)
-	}
 
 	// V1 routes (backward compatible)
 	mux.HandleFunc("GET /", s.handleInfo)
@@ -43,12 +25,52 @@ func (s *Server) setupRoutes() *http.ServeMux {
 	mux.HandleFunc("GET /v2/scheduler/stats", s.handleSchedulerStats)
 	mux.HandleFunc("POST /v2/scheduler/retrain", s.handleSchedulerRetrain)
 
-	// Debug routes (only when debug mode is enabled)
-	if s.config.Debug.Enabled {
-		s.logger.Warn("debug mode enabled - debug endpoints are accessible")
-		mux.HandleFunc("POST /debug/inject-metrics", s.handleInjectMetrics)
-		mux.HandleFunc("GET /debug/status", s.handleDebugStatus)
-	}
+	// Setup debug routes with separate authentication
+	s.setupDebugRoutes(mux)
 
 	return mux
+}
+
+// setupDebugRoutes configures debug and profiling endpoints with authentication.
+func (s *Server) setupDebugRoutes(mux *http.ServeMux) {
+	profilingEnabled := s.config.Server.Profiling.Enabled
+	debugEnabled := s.config.Debug.Enabled
+
+	if !profilingEnabled && !debugEnabled {
+		return
+	}
+
+	// Create debug auth middleware config
+	debugAuthConfig := &middleware.DebugAuthConfig{
+		Token:              s.config.Debug.Auth.Token,
+		FallbackAuthConfig: s.authConfig,
+	}
+	debugAuth := middleware.DebugAuth(debugAuthConfig)
+
+	// Profiling routes (if enabled)
+	if profilingEnabled {
+		s.logger.Info("profiling endpoints enabled at /debug/pprof/ (auth required)")
+		// Wrap pprof handlers with debug auth
+		mux.Handle("GET /debug/pprof/{$}", debugAuth(http.HandlerFunc(pprof.Index)))
+		mux.Handle("GET /debug/pprof/cmdline", debugAuth(http.HandlerFunc(pprof.Cmdline)))
+		mux.Handle("GET /debug/pprof/profile", debugAuth(http.HandlerFunc(pprof.Profile)))
+		mux.Handle("GET /debug/pprof/symbol", debugAuth(http.HandlerFunc(pprof.Symbol)))
+		mux.Handle("POST /debug/pprof/symbol", debugAuth(http.HandlerFunc(pprof.Symbol)))
+		mux.Handle("GET /debug/pprof/trace", debugAuth(http.HandlerFunc(pprof.Trace)))
+		mux.Handle("GET /debug/pprof/heap", debugAuth(pprof.Handler("heap")))
+		mux.Handle("GET /debug/pprof/goroutine", debugAuth(pprof.Handler("goroutine")))
+		mux.Handle("GET /debug/pprof/allocs", debugAuth(pprof.Handler("allocs")))
+		mux.Handle("GET /debug/pprof/block", debugAuth(pprof.Handler("block")))
+		mux.Handle("GET /debug/pprof/mutex", debugAuth(pprof.Handler("mutex")))
+		mux.Handle("GET /debug/pprof/threadcreate", debugAuth(pprof.Handler("threadcreate")))
+		// Catch-all for index
+		mux.Handle("GET /debug/pprof/{name...}", debugAuth(http.HandlerFunc(pprof.Index)))
+	}
+
+	// Debug routes (if enabled)
+	if debugEnabled {
+		s.logger.Warn("debug mode enabled - debug endpoints require authentication")
+		mux.Handle("POST /debug/inject-metrics", debugAuth(http.HandlerFunc(s.handleInjectMetrics)))
+		mux.Handle("GET /debug/status", debugAuth(http.HandlerFunc(s.handleDebugStatus)))
+	}
 }
