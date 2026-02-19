@@ -32,9 +32,6 @@ var (
 				Foreground(colorPrimary)
 
 	// Progress bar
-	progressBarFilledStyle = lipgloss.NewStyle().
-				Foreground(colorSuccess)
-
 	progressBarEmptyStyle = lipgloss.NewStyle().
 				Foreground(colorSecondary)
 
@@ -60,12 +57,6 @@ var (
 	errorStyle = lipgloss.NewStyle().
 			Foreground(colorDanger).
 			Bold(true)
-
-	// Box border
-	boxStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(colorSecondary).
-			Padding(0, 1)
 
 	// Positive/Negative deltas
 	positiveDeltaStyle = lipgloss.NewStyle().

@@ -62,7 +62,7 @@ func TestThresholdStrategyDecide(t *testing.T) {
 	// Test that it returns a result (placeholder implementation)
 	result := strategy.Decide(nil)
 	if result == nil {
-		t.Error("expected result, got nil")
+		t.Fatal("expected result, got nil")
 	}
 	if result.Strategy != "threshold" {
 		t.Errorf("expected strategy 'threshold', got '%s'", result.Strategy)
@@ -79,7 +79,7 @@ func TestPredictiveStrategyDecide(t *testing.T) {
 
 	result := strategy.Decide(nil)
 	if result == nil {
-		t.Error("expected result, got nil")
+		t.Fatal("expected result, got nil")
 	}
 	if result.Strategy != "predictive" {
 		t.Errorf("expected strategy 'predictive', got '%s'", result.Strategy)
@@ -96,7 +96,7 @@ func TestConservativeStrategyDecide(t *testing.T) {
 
 	result := strategy.Decide(nil)
 	if result == nil {
-		t.Error("expected result, got nil")
+		t.Fatal("expected result, got nil")
 	}
 	if result.Strategy != "conservative" {
 		t.Errorf("expected strategy 'conservative', got '%s'", result.Strategy)

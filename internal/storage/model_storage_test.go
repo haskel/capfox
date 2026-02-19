@@ -109,7 +109,9 @@ func TestModelStorage_GetModelInfo(t *testing.T) {
 
 	// Save model
 	model := &mockModel{Data: "test", Value: 123}
-	ms.SaveModel(model)
+	if err := ms.SaveModel(model); err != nil {
+		t.Fatalf("failed to save model: %v", err)
+	}
 
 	// Check info
 	info = ms.GetModelInfo()
@@ -137,7 +139,9 @@ func TestModelStorage_DeleteModel(t *testing.T) {
 
 	// Save model
 	model := &mockModel{Data: "test", Value: 123}
-	ms.SaveModel(model)
+	if err := ms.SaveModel(model); err != nil {
+		t.Fatalf("failed to save model: %v", err)
+	}
 
 	if !ms.ModelExists() {
 		t.Error("expected model to exist after save")

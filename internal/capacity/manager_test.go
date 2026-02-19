@@ -54,7 +54,7 @@ func testAggregator(cpuPercent, memPercent float64) *monitor.Aggregator {
 
 	agg := monitor.NewAggregator(monitors, time.Second, testLogger())
 	ctx := context.Background()
-	agg.Start(ctx)
+	_ = agg.Start(ctx)
 
 	return agg
 }

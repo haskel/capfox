@@ -124,7 +124,7 @@ func TestGradientBoostModel_NeedsRetrain(t *testing.T) {
 	}
 
 	// After retrain, should not need retrain
-	m.Retrain()
+	_ = m.Retrain()
 	if m.NeedsRetrain() {
 		t.Error("expected no retrain needed after retrain")
 	}
@@ -153,7 +153,7 @@ func TestGradientBoostModel_ConfidenceAfterRetrain(t *testing.T) {
 		m.Observe("test", i*100, &decision.ResourceImpact{CPUDelta: float64(i * 10)})
 	}
 
-	m.Retrain()
+	_ = m.Retrain()
 
 	conf := m.Confidence("test")
 	if conf <= 0 {
@@ -200,7 +200,7 @@ func TestGradientBoostModel_BufferLimit(t *testing.T) {
 	}
 
 	// But internal buffer should be limited (checked implicitly by successful operations)
-	m.Retrain()
+	_ = m.Retrain()
 	if m.Predict("test", 50) == nil {
 		t.Error("expected prediction after retrain")
 	}
@@ -213,7 +213,7 @@ func TestGradientBoostModel_SaveLoad(t *testing.T) {
 	for i := 1; i <= 10; i++ {
 		m1.Observe("test", i*100, &decision.ResourceImpact{CPUDelta: float64(i * 10)})
 	}
-	m1.Retrain()
+	_ = m1.Retrain()
 
 	// Save
 	var buf bytes.Buffer

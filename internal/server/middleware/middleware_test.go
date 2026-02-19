@@ -53,7 +53,7 @@ func TestLogging(t *testing.T) {
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
+		_, _ = w.Write([]byte("ok"))
 	})
 
 	logged := Logging(logger)(handler)
@@ -101,7 +101,7 @@ func TestRecovery(t *testing.T) {
 func TestResponseWriter(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte("created"))
+		_, _ = w.Write([]byte("created"))
 	})
 
 	req := httptest.NewRequest(http.MethodPost, "/", nil)

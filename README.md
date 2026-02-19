@@ -1,4 +1,4 @@
-# 🦊 Capfox
+# 🦊 capfox
 
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -6,7 +6,7 @@
 
 **Run or wait? Guard for hungry server tasks — ask before OOM kills**
 
-Capfox monitors system resources (CPU, Memory, GPU, Storage) and predicts whether your server can handle incoming tasks — before they start.
+capfox monitors system resources (CPU, Memory, GPU, Storage) and predicts whether your server can handle incoming tasks — before they start.
 
 ## ✨ Features
 
@@ -99,7 +99,7 @@ curl http://localhost:8080/status
 
 ### Notify Task Start
 
-Help Capfox learn task impact:
+Help capfox learn task impact:
 
 ```bash
 curl -X POST http://localhost:8080/task/start \

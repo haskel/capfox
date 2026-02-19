@@ -62,7 +62,7 @@ func TestAggregator_GetState(t *testing.T) {
 		t.Errorf("expected memory usage 50.0, got %f", state.Memory.UsagePercent)
 	}
 
-	agg.Stop()
+	_ = agg.Stop()
 }
 
 func TestAggregator_StateClone(t *testing.T) {
@@ -113,8 +113,10 @@ func TestAggregator_GetStateJSON(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	agg.Start(ctx)
-	defer agg.Stop()
+	if err := agg.Start(ctx); err != nil {
+		t.Fatalf("failed to start: %v", err)
+	}
+	defer func() { _ = agg.Stop() }()
 
 	jsonData, err := agg.GetStateJSON()
 	if err != nil {
@@ -184,7 +186,7 @@ func TestAggregator_IntegrationWithRealMonitors(t *testing.T) {
 		t.Error("timestamp should not be zero")
 	}
 
-	agg.Stop()
+	_ = agg.Stop()
 }
 
 func contains(s, substr string) bool {
@@ -213,7 +215,9 @@ func TestAggregator_StopIdempotent(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	agg.Start(ctx)
+	if err := agg.Start(ctx); err != nil {
+		t.Fatalf("failed to start: %v", err)
+	}
 
 	// Multiple Stop calls should not panic
 	for i := 0; i < 3; i++ {

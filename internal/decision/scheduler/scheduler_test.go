@@ -110,7 +110,7 @@ func TestScheduler_RetrainsOnSchedule(t *testing.T) {
 	s := NewScheduler(mock, Config{Interval: 50 * time.Millisecond})
 
 	ctx := context.Background()
-	s.Start(ctx)
+	_ = s.Start(ctx)
 	defer s.Stop()
 
 	// Wait for at least one retrain
@@ -128,7 +128,7 @@ func TestScheduler_DoesNotRetrainWhenNotNeeded(t *testing.T) {
 	s := NewScheduler(mock, Config{Interval: 50 * time.Millisecond})
 
 	ctx := context.Background()
-	s.Start(ctx)
+	_ = s.Start(ctx)
 	defer s.Stop()
 
 	// Wait for scheduler tick
@@ -187,8 +187,8 @@ func TestScheduler_Stats(t *testing.T) {
 
 	// Start and retrain
 	ctx := context.Background()
-	s.Start(ctx)
-	s.ForceRetrain()
+	_ = s.Start(ctx)
+	_ = s.ForceRetrain()
 
 	stats = s.Stats()
 	if !stats.Running {
