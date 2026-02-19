@@ -38,11 +38,13 @@ type Storage struct {
 	flushInterval time.Duration
 	logger        *slog.Logger
 
-	mu      sync.RWMutex
-	data    *Data
-	dirty   bool
-	cancel  context.CancelFunc
-	done    chan struct{}
+	mu       sync.RWMutex
+	data     *Data
+	dirty    bool
+	cancel   context.CancelFunc
+	done     chan struct{}
+	stopOnce sync.Once
+	stopErr  error
 }
 
 // New creates a new Storage instance.
@@ -170,14 +172,18 @@ func (s *Storage) Start(ctx context.Context) {
 }
 
 // Stop stops the periodic flush and saves final state.
+// Multiple calls to Stop are safe and idempotent.
 func (s *Storage) Stop() error {
-	if s.cancel != nil {
-		s.cancel()
-		<-s.done
-	}
+	s.stopOnce.Do(func() {
+		if s.cancel != nil {
+			s.cancel()
+			<-s.done
+		}
 
-	// Final save
-	return s.Save()
+		// Final save
+		s.stopErr = s.Save()
+	})
+	return s.stopErr
 }
 
 func (s *Storage) flushLoop(ctx context.Context) {

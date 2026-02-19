@@ -251,3 +251,31 @@ func TestStorage_AtomicWrite(t *testing.T) {
 		t.Error("data file should exist after save")
 	}
 }
+
+func TestStorage_StopIdempotent(t *testing.T) {
+	tmpDir := t.TempDir()
+	s := New(tmpDir, time.Second, testLogger())
+
+	ctx := context.Background()
+	s.Start(ctx)
+
+	s.UpdateTaskStats("task1", 1, 1.0, 1.0, 0, 0)
+
+	// Multiple Stop calls should not panic
+	for i := 0; i < 3; i++ {
+		err := s.Stop()
+		if err != nil {
+			t.Errorf("Stop() returned error on call %d: %v", i+1, err)
+		}
+	}
+
+	// Data should still be saved
+	s2 := New(tmpDir, time.Second, testLogger())
+	if err := s2.Load(); err != nil {
+		t.Fatalf("Load failed: %v", err)
+	}
+
+	if s2.TaskCount() != 1 {
+		t.Errorf("expected 1 task, got %d", s2.TaskCount())
+	}
+}
