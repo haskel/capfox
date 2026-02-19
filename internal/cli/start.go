@@ -182,7 +182,7 @@ func runStart(cmd *cobra.Command, args []string) error {
 		// Stop learning engine
 		le.Stop()
 
-		agg.Stop()
+		_ = agg.Stop()
 		cancel()
 	}()
 
