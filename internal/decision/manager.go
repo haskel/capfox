@@ -60,22 +60,24 @@ func NewManager(
 
 // Decide makes a decision about whether a task can run.
 func (m *Manager) Decide(task string, complexity int, resources *ResourceEstimate) *Result {
+	// Acquire read lock for thresholds and pending tasks
+	m.mu.RLock()
+	thresholds := m.thresholds
+	pendingTasks := m.pendingTasks
+	m.mu.RUnlock()
+
 	// Build context
 	ctx := NewContext(task, complexity).
 		WithResources(resources).
 		WithCurrentState(m.aggregator.GetState()).
-		WithThresholds(m.thresholds)
+		WithThresholds(thresholds).
+		WithPendingTasks(pendingTasks)
 
 	// Get prediction from model
 	if m.model != nil {
 		prediction := m.model.Predict(task, complexity)
 		ctx.WithPrediction(prediction)
 	}
-
-	// Add pending tasks for queue-aware strategy
-	m.mu.RLock()
-	ctx.WithPendingTasks(m.pendingTasks)
-	m.mu.RUnlock()
 
 	// Delegate to strategy
 	return m.strategy.Decide(ctx)
@@ -120,5 +122,7 @@ func (m *Manager) Model() PredictionModel {
 
 // UpdateThresholds updates the threshold configuration.
 func (m *Manager) UpdateThresholds(thresholds *ThresholdsConfig) {
+	m.mu.Lock()
 	m.thresholds = thresholds
+	m.mu.Unlock()
 }
