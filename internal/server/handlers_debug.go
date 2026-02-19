@@ -43,7 +43,7 @@ func (s *Server) handleInjectMetrics(w http.ResponseWriter, r *http.Request) {
 		"vram_usage", req.VRAMUsage,
 	)
 
-	writeJSON(w, http.StatusOK, map[string]bool{"success": true})
+	s.writeJSON(w, http.StatusOK, map[string]bool{"success": true})
 }
 
 // handleDebugStatus handles GET /debug/status.
@@ -60,5 +60,5 @@ func (s *Server) handleDebugStatus(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	writeJSON(w, http.StatusOK, resp)
+	s.writeJSON(w, http.StatusOK, resp)
 }

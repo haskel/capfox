@@ -28,7 +28,7 @@ func (s *Server) handleInfo(w http.ResponseWriter, r *http.Request) {
 		Version: s.version,
 	}
 
-	writeJSON(w, http.StatusOK, resp)
+	s.writeJSON(w, http.StatusOK, resp)
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -36,12 +36,12 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		Status: "ok",
 	}
 
-	writeJSON(w, http.StatusOK, resp)
+	s.writeJSON(w, http.StatusOK, resp)
 }
 
 func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	state := s.aggregator.GetState()
-	writeJSON(w, http.StatusOK, state)
+	s.writeJSON(w, http.StatusOK, state)
 }
 
 func (s *Server) handleAsk(w http.ResponseWriter, r *http.Request) {
@@ -58,9 +58,9 @@ func (s *Server) handleAsk(w http.ResponseWriter, r *http.Request) {
 	resp := s.capacityManager.Ask(req, withReasons)
 
 	if resp.Allowed {
-		writeJSON(w, http.StatusOK, resp)
+		s.writeJSON(w, http.StatusOK, resp)
 	} else {
-		writeJSON(w, http.StatusServiceUnavailable, resp)
+		s.writeJSON(w, http.StatusServiceUnavailable, resp)
 	}
 }
 
@@ -87,7 +87,7 @@ func (s *Server) handleTaskStart(w http.ResponseWriter, r *http.Request) {
 		Task:     req.Task,
 	}
 
-	writeJSON(w, http.StatusOK, resp)
+	s.writeJSON(w, http.StatusOK, resp)
 }
 
 func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
@@ -95,7 +95,7 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 	taskName := r.URL.Query().Get("task")
 
 	if s.learningEngine == nil {
-		writeJSON(w, http.StatusOK, &learning.AllStats{
+		s.writeJSON(w, http.StatusOK, &learning.AllStats{
 			Tasks:      make(map[string]*learning.TaskStats),
 			TotalTasks: 0,
 		})
@@ -108,16 +108,21 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "task not found", http.StatusNotFound)
 			return
 		}
-		writeJSON(w, http.StatusOK, stats)
+		s.writeJSON(w, http.StatusOK, stats)
 		return
 	}
 
 	stats := s.learningEngine.GetStats()
-	writeJSON(w, http.StatusOK, stats)
+	s.writeJSON(w, http.StatusOK, stats)
 }
 
-func writeJSON(w http.ResponseWriter, status int, data any) {
+func (s *Server) writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		s.logger.Error("failed to encode JSON response",
+			"error", err,
+			"status", status,
+		)
+	}
 }

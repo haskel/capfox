@@ -59,9 +59,9 @@ func (s *Server) handleAskV2(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if resp.Allowed {
-		writeJSON(w, http.StatusOK, resp)
+		s.writeJSON(w, http.StatusOK, resp)
 	} else {
-		writeJSON(w, http.StatusServiceUnavailable, resp)
+		s.writeJSON(w, http.StatusServiceUnavailable, resp)
 	}
 }
 
@@ -140,7 +140,7 @@ func (s *Server) handleModelStats(w http.ResponseWriter, r *http.Request) {
 		Tasks:             tasks,
 	}
 
-	writeJSON(w, http.StatusOK, resp)
+	s.writeJSON(w, http.StatusOK, resp)
 }
 
 // SchedulerStatsResponse is the response for GET /v2/scheduler/stats.
@@ -172,7 +172,7 @@ func (s *Server) handleSchedulerStats(w http.ResponseWriter, r *http.Request) {
 		resp.LastRetrain = stats.LastRetrain.Format("2006-01-02T15:04:05Z")
 	}
 
-	writeJSON(w, http.StatusOK, resp)
+	s.writeJSON(w, http.StatusOK, resp)
 }
 
 // handleSchedulerRetrain handles POST /v2/scheduler/retrain.
@@ -187,5 +187,5 @@ func (s *Server) handleSchedulerRetrain(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]bool{"success": true})
+	s.writeJSON(w, http.StatusOK, map[string]bool{"success": true})
 }
