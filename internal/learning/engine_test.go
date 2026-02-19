@@ -45,14 +45,14 @@ func testAggregator(cpuPercent, memPercent float64) *monitor.Aggregator {
 
 	agg := monitor.NewAggregator(monitors, 50*time.Millisecond, testLogger())
 	ctx := context.Background()
-	agg.Start(ctx)
+	_ = agg.Start(ctx)
 
 	return agg
 }
 
 func TestEngine_NotifyTaskStart(t *testing.T) {
 	agg := testAggregator(50, 50)
-	defer agg.Stop()
+	defer func() { _ = agg.Stop() }()
 
 	model := NewMovingAverageModel(0.2)
 	engine := NewEngine(model, agg, 100*time.Millisecond, testLogger())
@@ -67,7 +67,7 @@ func TestEngine_NotifyTaskStart(t *testing.T) {
 
 func TestEngine_Observation(t *testing.T) {
 	agg := testAggregator(50, 50)
-	defer agg.Stop()
+	defer func() { _ = agg.Stop() }()
 
 	model := NewMovingAverageModel(0.2)
 	engine := NewEngine(model, agg, 50*time.Millisecond, testLogger())
@@ -91,7 +91,7 @@ func TestEngine_Observation(t *testing.T) {
 
 func TestEngine_GetStats(t *testing.T) {
 	agg := testAggregator(50, 50)
-	defer agg.Stop()
+	defer func() { _ = agg.Stop() }()
 
 	model := NewMovingAverageModel(0.2)
 	engine := NewEngine(model, agg, 50*time.Millisecond, testLogger())
@@ -108,7 +108,7 @@ func TestEngine_GetStats(t *testing.T) {
 
 func TestEngine_GetTaskStats(t *testing.T) {
 	agg := testAggregator(50, 50)
-	defer agg.Stop()
+	defer func() { _ = agg.Stop() }()
 
 	model := NewMovingAverageModel(0.2)
 	engine := NewEngine(model, agg, time.Second, testLogger())
@@ -133,7 +133,7 @@ func TestEngine_GetTaskStats(t *testing.T) {
 
 func TestEngine_Predict(t *testing.T) {
 	agg := testAggregator(50, 50)
-	defer agg.Stop()
+	defer func() { _ = agg.Stop() }()
 
 	model := NewMovingAverageModel(0.2)
 	engine := NewEngine(model, agg, time.Second, testLogger())
@@ -158,7 +158,7 @@ func TestEngine_Predict(t *testing.T) {
 
 func TestEngine_Model(t *testing.T) {
 	agg := testAggregator(50, 50)
-	defer agg.Stop()
+	defer func() { _ = agg.Stop() }()
 
 	model := NewMovingAverageModel(0.2)
 	engine := NewEngine(model, agg, time.Second, testLogger())
@@ -170,7 +170,7 @@ func TestEngine_Model(t *testing.T) {
 
 func TestEngine_Stop(t *testing.T) {
 	agg := testAggregator(50, 50)
-	defer agg.Stop()
+	defer func() { _ = agg.Stop() }()
 
 	model := NewMovingAverageModel(0.2)
 	engine := NewEngine(model, agg, time.Second, testLogger())
@@ -192,7 +192,7 @@ func TestEngine_Stop(t *testing.T) {
 
 func TestEngine_StopWithTimeout(t *testing.T) {
 	agg := testAggregator(50, 50)
-	defer agg.Stop()
+	defer func() { _ = agg.Stop() }()
 
 	model := NewMovingAverageModel(0.2)
 	engine := NewEngine(model, agg, 5*time.Second, testLogger())
@@ -212,7 +212,7 @@ func TestEngine_StopWithTimeout(t *testing.T) {
 
 func TestEngine_BoundedConcurrency(t *testing.T) {
 	agg := testAggregator(50, 50)
-	defer agg.Stop()
+	defer func() { _ = agg.Stop() }()
 
 	model := NewMovingAverageModel(0.2)
 	maxWorkers := 5
@@ -235,7 +235,7 @@ func TestEngine_BoundedConcurrency(t *testing.T) {
 
 func TestEngine_StopMultipleCalls(t *testing.T) {
 	agg := testAggregator(50, 50)
-	defer agg.Stop()
+	defer func() { _ = agg.Stop() }()
 
 	model := NewMovingAverageModel(0.2)
 	engine := NewEngine(model, agg, 100*time.Millisecond, testLogger())
@@ -250,7 +250,7 @@ func TestEngine_StopMultipleCalls(t *testing.T) {
 
 func TestEngine_TaskIDFormat(t *testing.T) {
 	agg := testAggregator(50, 50)
-	defer agg.Stop()
+	defer func() { _ = agg.Stop() }()
 
 	model := NewMovingAverageModel(0.2)
 	engine := NewEngine(model, agg, 50*time.Millisecond, testLogger())

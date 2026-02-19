@@ -262,7 +262,7 @@ func TestGradientBoostModel_ConstantData(t *testing.T) {
 		m.Observe("test", 100, &decision.ResourceImpact{CPUDelta: float64(10 + i)})
 	}
 
-	m.Retrain()
+	_ = m.Retrain()
 
 	prediction := m.Predict("test", 100)
 	if prediction == nil {
@@ -289,7 +289,7 @@ func TestGradientBoostModel_MultipleResources(t *testing.T) {
 		})
 	}
 
-	m.Retrain()
+	_ = m.Retrain()
 
 	prediction := m.Predict("test", 500)
 	if prediction == nil {

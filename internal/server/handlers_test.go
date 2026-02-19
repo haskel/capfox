@@ -43,7 +43,7 @@ func testServer(t *testing.T) *Server {
 
 	agg := monitor.NewAggregator(monitors, time.Second, testLogger())
 	ctx := context.Background()
-	agg.Start(ctx)
+	_ = agg.Start(ctx)
 
 	cm := capacity.NewManager(agg, cfg.Thresholds)
 
@@ -69,7 +69,7 @@ func testServerOverloaded(t *testing.T) *Server {
 
 	agg := monitor.NewAggregator(monitors, time.Second, testLogger())
 	ctx := context.Background()
-	agg.Start(ctx)
+	_ = agg.Start(ctx)
 
 	cm := capacity.NewManager(agg, cfg.Thresholds)
 

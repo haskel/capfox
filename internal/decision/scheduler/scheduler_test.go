@@ -209,7 +209,7 @@ func TestScheduler_ContextCancellation(t *testing.T) {
 	s := NewScheduler(mock, Config{Interval: time.Hour})
 
 	ctx, cancel := context.WithCancel(context.Background())
-	s.Start(ctx)
+	_ = s.Start(ctx)
 
 	// Cancel context
 	cancel()

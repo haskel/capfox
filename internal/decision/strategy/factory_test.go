@@ -113,7 +113,7 @@ func TestQueueAwareStrategyDecide(t *testing.T) {
 
 	result := strategy.Decide(nil)
 	if result == nil {
-		t.Error("expected result, got nil")
+		t.Fatal("expected result, got nil")
 	}
 	if result.Strategy != "queue_aware" {
 		t.Errorf("expected strategy 'queue_aware', got '%s'", result.Strategy)
