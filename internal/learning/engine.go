@@ -220,6 +220,10 @@ func (e *Engine) Stop() {
 		return
 	}
 	e.stopped = true
+
+	// Clear pending tasks to prevent memory leak
+	pendingCount := len(e.pendingTasks)
+	e.pendingTasks = make(map[string]*pendingTask)
 	e.mu.Unlock()
 
 	// Cancel all pending goroutines
@@ -228,7 +232,7 @@ func (e *Engine) Stop() {
 	// Wait for all goroutines to finish
 	e.wg.Wait()
 
-	e.logger.Debug("learning engine stopped")
+	e.logger.Debug("learning engine stopped", "dropped_pending", pendingCount)
 }
 
 // StopWithTimeout stops the engine with a timeout.
@@ -239,6 +243,10 @@ func (e *Engine) StopWithTimeout(timeout time.Duration) {
 		return
 	}
 	e.stopped = true
+
+	// Clear pending tasks to prevent memory leak
+	pendingCount := len(e.pendingTasks)
+	e.pendingTasks = make(map[string]*pendingTask)
 	e.mu.Unlock()
 
 	// Cancel all pending goroutines
@@ -253,9 +261,9 @@ func (e *Engine) StopWithTimeout(timeout time.Duration) {
 
 	select {
 	case <-done:
-		e.logger.Debug("learning engine stopped gracefully")
+		e.logger.Debug("learning engine stopped gracefully", "dropped_pending", pendingCount)
 	case <-time.After(timeout):
-		e.logger.Warn("learning engine stop timed out", "timeout", timeout)
+		e.logger.Warn("learning engine stop timed out", "timeout", timeout, "dropped_pending", pendingCount)
 	}
 }
 
