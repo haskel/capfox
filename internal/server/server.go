@@ -82,10 +82,8 @@ func New(cfg *config.Config, agg *monitor.Aggregator, cm *capacity.Manager, le *
 func (s *Server) ReloadConfig(cfg *config.Config) {
 	s.logger.Info("reloading configuration")
 
-	// Update auth config (pointer is shared with middleware)
-	s.authConfig.Enabled = cfg.Auth.Enabled
-	s.authConfig.User = cfg.Auth.User
-	s.authConfig.Password = cfg.Auth.Password
+	// Update auth config (thread-safe)
+	s.authConfig.Update(cfg.Auth.Enabled, cfg.Auth.User, cfg.Auth.Password)
 
 	// Update thresholds in capacity manager
 	s.capacityManager.UpdateThresholds(cfg.Thresholds)

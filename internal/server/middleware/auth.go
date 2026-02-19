@@ -4,13 +4,35 @@ import (
 	"crypto/subtle"
 	"net/http"
 	"strings"
+	"sync"
 )
 
 // AuthConfig holds authentication configuration.
+// Thread-safe for concurrent access and updates.
 type AuthConfig struct {
+	mu       sync.RWMutex
 	Enabled  bool
 	User     string
 	Password string
+}
+
+// Update safely updates auth configuration.
+func (c *AuthConfig) Update(enabled bool, user, password string) {
+	c.mu.Lock()
+	c.Enabled = enabled
+	c.User = user
+	c.Password = password
+	c.mu.Unlock()
+}
+
+// get returns a snapshot of auth config for safe reading.
+func (c *AuthConfig) get() (enabled bool, user, password string) {
+	c.mu.RLock()
+	enabled = c.Enabled
+	user = c.User
+	password = c.Password
+	c.mu.RUnlock()
+	return
 }
 
 // Auth creates a Basic Auth middleware.
@@ -30,8 +52,11 @@ func Auth(config *AuthConfig, excludePaths ...string) Middleware {
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Get current config snapshot (thread-safe)
+			enabled, configUser, configPass := config.get()
+
 			// Skip auth if disabled
-			if !config.Enabled {
+			if !enabled {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -58,8 +83,8 @@ func Auth(config *AuthConfig, excludePaths ...string) Middleware {
 			}
 
 			// Constant time comparison to prevent timing attacks
-			userMatch := subtle.ConstantTimeCompare([]byte(user), []byte(config.User)) == 1
-			passMatch := subtle.ConstantTimeCompare([]byte(pass), []byte(config.Password)) == 1
+			userMatch := subtle.ConstantTimeCompare([]byte(user), []byte(configUser)) == 1
+			passMatch := subtle.ConstantTimeCompare([]byte(pass), []byte(configPass)) == 1
 
 			if !userMatch || !passMatch {
 				unauthorized(w)
