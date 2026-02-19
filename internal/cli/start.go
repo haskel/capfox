@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/spf13/cobra"
 
@@ -168,7 +167,7 @@ func runStart(cmd *cobra.Command, args []string) error {
 		signal.Stop(sigCh)
 		close(shutdownDone)
 
-		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout())
 		defer shutdownCancel()
 
 		if err := srv.Shutdown(shutdownCtx); err != nil {

@@ -32,11 +32,12 @@ type DebugAuthConfig struct {
 }
 
 type ServerConfig struct {
-	Host      string          `yaml:"host"`
-	Port      int             `yaml:"port"`
-	PIDFile   string          `yaml:"pid_file"`
-	Profiling ProfilingConfig `yaml:"profiling"`
-	RateLimit RateLimitConfig `yaml:"rate_limit"`
+	Host            string          `yaml:"host"`
+	Port            int             `yaml:"port"`
+	PIDFile         string          `yaml:"pid_file"`
+	ShutdownTimeout int             `yaml:"shutdown_timeout_sec"`
+	Profiling       ProfilingConfig `yaml:"profiling"`
+	RateLimit       RateLimitConfig `yaml:"rate_limit"`
 }
 
 // RateLimitConfig holds rate limiting configuration.
@@ -151,4 +152,13 @@ func (c *Config) FlushInterval() time.Duration {
 
 func (c *Config) ObservationDelay() time.Duration {
 	return time.Duration(c.Learning.ObservationDelaySec) * time.Second
+}
+
+// ShutdownTimeout returns the server shutdown timeout.
+// Defaults to 25 seconds to allow buffer for Kubernetes terminationGracePeriodSeconds (30s).
+func (c *Config) ShutdownTimeout() time.Duration {
+	if c.Server.ShutdownTimeout <= 0 {
+		return 25 * time.Second
+	}
+	return time.Duration(c.Server.ShutdownTimeout) * time.Second
 }
