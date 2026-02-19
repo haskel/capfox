@@ -2,7 +2,7 @@ package scheduler
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -17,7 +17,7 @@ type Scheduler struct {
 	running  bool
 	stopCh   chan struct{}
 	doneCh   chan struct{}
-	logger   *log.Logger
+	logger   *slog.Logger
 
 	// Stats
 	retrainCount int64
@@ -28,7 +28,7 @@ type Scheduler struct {
 // Config holds scheduler configuration.
 type Config struct {
 	Interval time.Duration
-	Logger   *log.Logger
+	Logger   *slog.Logger
 }
 
 // NewScheduler creates a new model scheduler.
@@ -107,7 +107,7 @@ func (s *Scheduler) checkAndRetrain() {
 		s.mu.Unlock()
 
 		if s.logger != nil {
-			s.logger.Printf("Model retrain error: %v", err)
+			s.logger.Error("model retrain failed", "error", err)
 		}
 		return
 	}
@@ -119,7 +119,7 @@ func (s *Scheduler) checkAndRetrain() {
 	s.mu.Unlock()
 
 	if s.logger != nil {
-		s.logger.Printf("Model retrained successfully (count: %d)", s.retrainCount)
+		s.logger.Info("model retrained successfully", "count", s.retrainCount)
 	}
 }
 
