@@ -190,3 +190,63 @@ func TestThresholdChecker_UpdateThresholds(t *testing.T) {
 		t.Errorf("expected no reasons after update, got %v", reasons)
 	}
 }
+
+func TestThresholdChecker_ConcurrentAccess(t *testing.T) {
+	checker := NewThresholdChecker(defaultThresholds())
+
+	state := &monitor.SystemState{
+		CPU:     monitor.CPUState{UsagePercent: 75},
+		Memory:  monitor.MemoryState{UsagePercent: 50},
+		Storage: monitor.StorageState{},
+	}
+
+	// Run concurrent Check and UpdateThresholds
+	done := make(chan bool)
+
+	// Start readers
+	for i := 0; i < 10; i++ {
+		go func() {
+			for j := 0; j < 100; j++ {
+				_ = checker.Check(state)
+			}
+			done <- true
+		}()
+	}
+
+	// Start writers
+	for i := 0; i < 5; i++ {
+		go func() {
+			for j := 0; j < 100; j++ {
+				newThresholds := defaultThresholds()
+				newThresholds.CPU.MaxPercent = float64(70 + j%20)
+				checker.UpdateThresholds(newThresholds)
+			}
+			done <- true
+		}()
+	}
+
+	// Wait for all goroutines
+	for i := 0; i < 15; i++ {
+		<-done
+	}
+}
+
+func TestThresholdChecker_GetThresholds(t *testing.T) {
+	original := defaultThresholds()
+	checker := NewThresholdChecker(original)
+
+	got := checker.GetThresholds()
+	if got.CPU.MaxPercent != original.CPU.MaxPercent {
+		t.Errorf("expected CPU threshold %f, got %f", original.CPU.MaxPercent, got.CPU.MaxPercent)
+	}
+
+	// Update and verify
+	newThresholds := defaultThresholds()
+	newThresholds.CPU.MaxPercent = 95
+	checker.UpdateThresholds(newThresholds)
+
+	got = checker.GetThresholds()
+	if got.CPU.MaxPercent != 95 {
+		t.Errorf("expected CPU threshold 95, got %f", got.CPU.MaxPercent)
+	}
+}

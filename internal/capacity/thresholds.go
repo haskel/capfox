@@ -1,6 +1,8 @@
 package capacity
 
 import (
+	"sync"
+
 	"github.com/haskel/capfox/internal/config"
 	"github.com/haskel/capfox/internal/monitor"
 )
@@ -16,6 +18,7 @@ const (
 )
 
 type ThresholdChecker struct {
+	mu         sync.RWMutex
 	thresholds config.ThresholdsConfig
 }
 
@@ -24,25 +27,29 @@ func NewThresholdChecker(thresholds config.ThresholdsConfig) *ThresholdChecker {
 }
 
 func (c *ThresholdChecker) Check(state *monitor.SystemState) []Reason {
+	c.mu.RLock()
+	thresholds := c.thresholds
+	c.mu.RUnlock()
+
 	var reasons []Reason
 
-	if state.CPU.UsagePercent > c.thresholds.CPU.MaxPercent {
+	if state.CPU.UsagePercent > thresholds.CPU.MaxPercent {
 		reasons = append(reasons, ReasonCPUOverload)
 	}
 
-	if state.Memory.UsagePercent > c.thresholds.Memory.MaxPercent {
+	if state.Memory.UsagePercent > thresholds.Memory.MaxPercent {
 		reasons = append(reasons, ReasonMemoryOverload)
 	}
 
 	// Check GPU thresholds
 	for _, gpu := range state.GPUs {
-		if gpu.UsagePercent > c.thresholds.GPU.MaxPercent {
+		if gpu.UsagePercent > thresholds.GPU.MaxPercent {
 			reasons = append(reasons, ReasonGPUOverload)
 			break
 		}
 
 		vramPercent := float64(gpu.VRAMUsedBytes) / float64(gpu.VRAMTotalBytes) * 100
-		if gpu.VRAMTotalBytes > 0 && vramPercent > c.thresholds.VRAM.MaxPercent {
+		if gpu.VRAMTotalBytes > 0 && vramPercent > thresholds.VRAM.MaxPercent {
 			reasons = append(reasons, ReasonVRAMOverload)
 			break
 		}
@@ -51,7 +58,7 @@ func (c *ThresholdChecker) Check(state *monitor.SystemState) []Reason {
 	// Check storage thresholds
 	for _, disk := range state.Storage {
 		freeGB := float64(disk.TotalBytes-disk.UsedBytes) / (1024 * 1024 * 1024)
-		if freeGB < c.thresholds.Storage.MinFreeGB {
+		if freeGB < thresholds.Storage.MinFreeGB {
 			reasons = append(reasons, ReasonStorageLow)
 			break
 		}
@@ -61,5 +68,14 @@ func (c *ThresholdChecker) Check(state *monitor.SystemState) []Reason {
 }
 
 func (c *ThresholdChecker) UpdateThresholds(thresholds config.ThresholdsConfig) {
+	c.mu.Lock()
 	c.thresholds = thresholds
+	c.mu.Unlock()
+}
+
+// GetThresholds returns a copy of the current thresholds.
+func (c *ThresholdChecker) GetThresholds() config.ThresholdsConfig {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.thresholds
 }
