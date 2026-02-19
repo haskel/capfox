@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  capfox:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: capfox
+    ports:
+      - "8080:8080"
+    volumes:
+      - capfox-data:/app/data
+      - ./configs/capfox.yaml:/app/configs/capfox.yaml:ro
+    environment:
+      - TZ=UTC
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  capfox-data:
+    driver: local

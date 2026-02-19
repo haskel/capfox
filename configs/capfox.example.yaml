@@ -1,0 +1,41 @@
+# Capfox Configuration Example
+
+server:
+  host: "0.0.0.0"
+  port: 8080
+  pid_file: "/var/run/capfox.pid"
+
+auth:
+  enabled: false
+  # Use environment variables for sensitive data
+  user: "${CAPFOX_AUTH_USER}"
+  password: "${CAPFOX_AUTH_PASSWORD}"
+
+thresholds:
+  cpu:
+    max_percent: 80
+  memory:
+    max_percent: 85
+  gpu:
+    max_percent: 90
+  vram:
+    max_percent: 85
+  storage:
+    min_free_gb: 10
+
+monitoring:
+  interval_ms: 1000
+  paths:
+    - "/"
+
+persistence:
+  data_dir: "/var/lib/capfox"
+  flush_interval_sec: 600
+
+logging:
+  level: "info"    # debug, info, warn, error
+  format: "json"   # json, text
+
+learning:
+  model: "moving_average"  # moving_average, linear_regression
+  observation_delay_sec: 5
