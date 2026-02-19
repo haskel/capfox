@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/haskel/capfox)](https://github.com/haskel/capfox/releases)
 
-**Lightweight capacity monitoring with predictive resource management**
+**Run or wait? Guard for hungry server tasks — ask before OOM kills**
 
 Capfox monitors system resources (CPU, Memory, GPU, Storage) and predicts whether your server can handle incoming tasks — before they start.
 
