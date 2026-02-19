@@ -155,8 +155,10 @@ func (m *PolynomialModel) Observe(task string, complexity int, impact *decision.
 
 	// Keep buffer size manageable
 	if len(data.Observations) > maxPolynomialObservations {
-		// Keep the last maxPolynomialObservations
-		data.Observations = data.Observations[len(data.Observations)-maxPolynomialObservations:]
+		// Copy to new slice to release memory from old observations
+		newObs := make([]observation, maxPolynomialObservations)
+		copy(newObs, data.Observations[len(data.Observations)-maxPolynomialObservations:])
+		data.Observations = newObs
 	}
 
 	// Recalculate coefficients if we have enough observations
