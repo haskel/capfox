@@ -6,6 +6,11 @@ func Default() *Config {
 			Host:    "0.0.0.0",
 			Port:    8080,
 			PIDFile: "/var/run/capfox.pid",
+			RateLimit: RateLimitConfig{
+				Enabled:           false,
+				RequestsPerSecond: 100,
+				Burst:             200,
+			},
 		},
 		Auth: AuthConfig{
 			Enabled:  false,

@@ -58,9 +58,17 @@ func New(cfg *config.Config, agg *monitor.Aggregator, cm *capacity.Manager, le *
 		}
 	}
 
+	// Rate limit config
+	rateLimitConfig := &middleware.RateLimitConfig{
+		Enabled:           cfg.Server.RateLimit.Enabled,
+		RequestsPerSecond: cfg.Server.RateLimit.RequestsPerSecond,
+		Burst:             cfg.Server.RateLimit.Burst,
+	}
+
 	handler := middleware.Chain(
 		mux,
 		middleware.Recovery(logger),
+		middleware.RateLimit(rateLimitConfig),
 		middleware.MaxBody(0), // 1MB limit
 		middleware.Logging(logger),
 		middleware.Auth(authConfig, authExcludes...),

@@ -36,6 +36,14 @@ type ServerConfig struct {
 	Port      int             `yaml:"port"`
 	PIDFile   string          `yaml:"pid_file"`
 	Profiling ProfilingConfig `yaml:"profiling"`
+	RateLimit RateLimitConfig `yaml:"rate_limit"`
+}
+
+// RateLimitConfig holds rate limiting configuration.
+type RateLimitConfig struct {
+	Enabled           bool    `yaml:"enabled"`
+	RequestsPerSecond float64 `yaml:"requests_per_second"`
+	Burst             int     `yaml:"burst"`
 }
 
 type ProfilingConfig struct {
