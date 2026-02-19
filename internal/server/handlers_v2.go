@@ -183,7 +183,8 @@ func (s *Server) handleSchedulerRetrain(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := s.v2.Scheduler.ForceRetrain(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		s.logger.Error("scheduler retrain failed", "error", err)
+		http.Error(w, "retrain operation failed", http.StatusInternalServerError)
 		return
 	}
 
