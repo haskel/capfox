@@ -1,6 +1,8 @@
 package learning
 
 import (
+	"sync"
+
 	"github.com/haskel/capfox/internal/decision"
 	"github.com/haskel/capfox/internal/decision/model"
 )
@@ -8,8 +10,9 @@ import (
 // ModelAdapter wraps decision/model.PredictionModel to implement the old learning.Model interface.
 // This allows gradual migration to the new model system.
 type ModelAdapter struct {
-	model    model.PredictionModel
-	observer StatsObserver
+	model      model.PredictionModel
+	observerMu sync.RWMutex
+	observer   StatsObserver
 }
 
 // NewModelAdapter creates a new adapter wrapping a PredictionModel.
@@ -39,9 +42,13 @@ func (a *ModelAdapter) Observe(task string, complexity int, impact *ResourceImpa
 	a.model.Observe(task, complexity, decisionImpact)
 
 	// Notify observer if set
-	if a.observer != nil {
+	a.observerMu.RLock()
+	observer := a.observer
+	a.observerMu.RUnlock()
+
+	if observer != nil {
 		stats := a.GetTaskStats(task)
-		a.observer(task, stats)
+		observer(task, stats)
 	}
 }
 
@@ -107,7 +114,9 @@ func (a *ModelAdapter) GetTaskStats(task string) *TaskStats {
 
 // SetObserver sets a callback for stats changes.
 func (a *ModelAdapter) SetObserver(observer StatsObserver) {
+	a.observerMu.Lock()
 	a.observer = observer
+	a.observerMu.Unlock()
 }
 
 // LoadStats loads previously saved statistics.
