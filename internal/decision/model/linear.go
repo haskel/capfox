@@ -193,12 +193,6 @@ func (m *LinearModel) Observe(task string, complexity int, impact *decision.Reso
 	data.GPUCov += deltaX * deltaGPU2
 	data.VRAMCov += deltaX * deltaVRAM2
 
-	// Use the new deltas for consistency check (unused but shows the pattern)
-	_ = deltaCPU2
-	_ = deltaMem2
-	_ = deltaGPU2
-	_ = deltaVRAM2
-
 	data.Count++
 }
 
