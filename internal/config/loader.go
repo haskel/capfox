@@ -28,6 +28,8 @@ func Load(path string) (*Config, error) {
 	return cfg, nil
 }
 
+// LoadOrDefault loads config from path, falling back to defaults on error.
+// Logs a warning to stderr if config loading fails.
 func LoadOrDefault(path string) *Config {
 	if path == "" {
 		return Default()
@@ -35,6 +37,7 @@ func LoadOrDefault(path string) *Config {
 
 	cfg, err := Load(path)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "warning: failed to load config from %s: %v (using defaults)\n", path, err)
 		return Default()
 	}
 
