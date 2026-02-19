@@ -411,3 +411,73 @@ func TestHandleStats_TaskNotFound(t *testing.T) {
 		t.Errorf("expected status 404, got %d", w.Code)
 	}
 }
+
+func TestHandleReady_Ready(t *testing.T) {
+	srv := testServer(t) // testServer calls agg.Start() which sets ready=true
+
+	req := httptest.NewRequest(http.MethodGet, "/ready", nil)
+	w := httptest.NewRecorder()
+
+	srv.handleReady(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status 200, got %d", w.Code)
+	}
+
+	var resp ReadyResponse
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	if !resp.Ready {
+		t.Error("expected ready=true")
+	}
+
+	if resp.Message != "" {
+		t.Errorf("expected empty message, got %s", resp.Message)
+	}
+}
+
+func TestHandleReady_NotReady(t *testing.T) {
+	cfg := config.Default()
+
+	monitors := []monitor.Monitor{
+		&mockMonitor{
+			name: "cpu",
+			data: &monitor.CPUState{UsagePercent: 50.0, Cores: []float64{50.0}},
+		},
+	}
+
+	// Create aggregator but don't start it - it won't be ready
+	agg := monitor.NewAggregator(monitors, time.Second, testLogger())
+	// Note: NOT calling agg.Start() - aggregator is not ready
+
+	cm := capacity.NewManager(agg, cfg.Thresholds)
+
+	model := learning.NewMovingAverageModel(0.2)
+	le := learning.NewEngine(model, agg, time.Second, testLogger())
+
+	srv := New(cfg, agg, cm, le, testLogger(), "0.1.0-test")
+
+	req := httptest.NewRequest(http.MethodGet, "/ready", nil)
+	w := httptest.NewRecorder()
+
+	srv.handleReady(w, req)
+
+	if w.Code != http.StatusServiceUnavailable {
+		t.Errorf("expected status 503, got %d", w.Code)
+	}
+
+	var resp ReadyResponse
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	if resp.Ready {
+		t.Error("expected ready=false")
+	}
+
+	if resp.Message == "" {
+		t.Error("expected non-empty message for not ready state")
+	}
+}

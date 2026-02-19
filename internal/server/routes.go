@@ -31,6 +31,7 @@ func (s *Server) setupRoutes() *http.ServeMux {
 	// V1 routes (backward compatible)
 	mux.HandleFunc("GET /", s.handleInfo)
 	mux.HandleFunc("GET /health", s.handleHealth)
+	mux.HandleFunc("GET /ready", s.handleReady)
 	mux.HandleFunc("GET /status", s.handleStatus)
 	mux.HandleFunc("POST /ask", s.handleAsk)
 	mux.HandleFunc("POST /task/notify", s.handleTaskStart)

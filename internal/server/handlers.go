@@ -39,6 +39,31 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	s.writeJSON(w, http.StatusOK, resp)
 }
 
+// ReadyResponse is the response for /ready endpoint.
+type ReadyResponse struct {
+	Ready   bool   `json:"ready"`
+	Message string `json:"message,omitempty"`
+}
+
+// handleReady returns readiness status.
+// Returns 200 OK when the system is ready to serve traffic,
+// 503 Service Unavailable when not ready.
+func (s *Server) handleReady(w http.ResponseWriter, r *http.Request) {
+	if !s.aggregator.IsReady() {
+		resp := ReadyResponse{
+			Ready:   false,
+			Message: "aggregator has not collected initial metrics",
+		}
+		s.writeJSON(w, http.StatusServiceUnavailable, resp)
+		return
+	}
+
+	resp := ReadyResponse{
+		Ready: true,
+	}
+	s.writeJSON(w, http.StatusOK, resp)
+}
+
 func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	state := s.aggregator.GetState()
 	s.writeJSON(w, http.StatusOK, state)

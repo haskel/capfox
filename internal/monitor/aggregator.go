@@ -15,6 +15,9 @@ type Aggregator struct {
 	mu       sync.RWMutex
 	done     chan struct{}
 	logger   *slog.Logger
+
+	ready     bool      // true after first successful collection
+	readyTime time.Time // when first collection completed
 }
 
 func NewAggregator(monitors []Monitor, interval time.Duration, logger *slog.Logger) *Aggregator {
@@ -52,6 +55,21 @@ func (a *Aggregator) GetState() *SystemState {
 func (a *Aggregator) GetStateJSON() ([]byte, error) {
 	state := a.GetState()
 	return json.Marshal(state)
+}
+
+// IsReady returns true if the aggregator has collected initial metrics.
+func (a *Aggregator) IsReady() bool {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	return a.ready
+}
+
+// ReadyTime returns when the aggregator became ready.
+// Returns zero time if not ready yet.
+func (a *Aggregator) ReadyTime() time.Time {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	return a.readyTime
 }
 
 // InjectedMetrics represents metrics to inject for testing/debugging.
@@ -178,5 +196,9 @@ func (a *Aggregator) collect() {
 
 	a.mu.Lock()
 	a.state = newState
+	if !a.ready {
+		a.ready = true
+		a.readyTime = time.Now()
+	}
 	a.mu.Unlock()
 }
