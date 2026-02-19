@@ -1,67 +1,165 @@
-# Capfox
+# 🦊 Capfox
 
-Server-side monitoring utility for tracking system resources and managing task capacity.
+[![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://go.dev/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/haskel/capfox)](https://github.com/haskel/capfox/releases)
 
-## Features
+**Lightweight capacity monitoring with predictive resource management**
 
-- Monitor CPU, Memory, GPU, VRAM, Storage, Processes
-- REST API for capacity queries (`/ask`)
-- Learning engine for task impact prediction
-- Hot-reload configuration via SIGHUP
-- Basic Auth support
-- Graceful degradation (works without GPU)
+Capfox monitors system resources (CPU, Memory, GPU, Storage) and predicts whether your server can handle incoming tasks — before they start.
 
-## Quick Start
+## ✨ Features
 
-### Build from source
+- **Real-time Monitoring** — CPU, Memory, GPU, VRAM, Storage, Processes
+- **Predictive Capacity Planning** — ML models (Linear, Polynomial, Gradient Boosting)
+- **Task Impact Learning** — Learns resource impact of task types over time
+- **Decision Strategies** — Threshold, Predictive, Conservative, Queue-aware
+- **REST API** — Simple HTTP API for integration
+- **TUI Dashboard** — Terminal UI for real-time monitoring
+- **Hot Reload** — Configuration reload without restart (SIGHUP)
+- **Graceful Degradation** — Works without GPU
 
+## 🚀 Quick Start
+
+### Installation
+
+**From releases:**
 ```bash
-go build -o capfox ./cmd/capfox
-./capfox start --config configs/capfox.example.yaml
+# Linux (amd64)
+curl -sSL https://github.com/haskel/capfox/releases/latest/download/capfox_linux_amd64.tar.gz | tar xz
+sudo mv capfox /usr/local/bin/
+
+# macOS (Apple Silicon)
+curl -sSL https://github.com/haskel/capfox/releases/latest/download/capfox_darwin_arm64.tar.gz | tar xz
+sudo mv capfox /usr/local/bin/
 ```
 
-### Docker
+**From source:**
+```bash
+git clone https://github.com/haskel/capfox.git
+cd capfox
+make build
+./bin/capfox --help
+```
 
+**Docker:**
 ```bash
 docker compose up -d
 ```
 
-## CLI Commands
+### Run
 
 ```bash
-capfox start           # Start server
-capfox stop            # Stop server (via PID file)
-capfox reload          # Reload configuration (SIGHUP)
-capfox config          # Show/validate configuration
-capfox status          # Get resource status
-capfox ask <task>      # Check if task can run
-capfox notify <task>   # Notify task start
-capfox stats           # Get learning statistics
+# Start the server
+capfox start
+
+# With custom config
+capfox start --config /path/to/config.yaml
+
+# Check system status
+capfox status
+
+# Open TUI dashboard
+capfox tui
 ```
 
-## API Endpoints
+## 📡 API
+
+### Check Capacity
+
+Ask if the system can handle a task:
+
+```bash
+curl -X POST http://localhost:8080/ask \
+  -H "Content-Type: application/json" \
+  -d '{"task": "video_encoding", "complexity": 1.5}'
+```
+
+Response:
+```json
+{
+  "allowed": true,
+  "task": "video_encoding"
+}
+```
+
+If denied:
+```json
+{
+  "allowed": false,
+  "reasons": ["cpu_overload", "memory_overload"]
+}
+```
+
+### Get System Status
+
+```bash
+curl http://localhost:8080/status
+```
+
+### Notify Task Start
+
+Help Capfox learn task impact:
+
+```bash
+curl -X POST http://localhost:8080/task/start \
+  -H "Content-Type: application/json" \
+  -d '{"task": "video_encoding", "complexity": 1.5}'
+```
+
+### Endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/` | Server info |
-| GET | `/health` | Health check (no auth) |
-| GET | `/status` | Current resource metrics |
-| POST | `/ask` | Check task capacity |
-| POST | `/task/notify` | Notify task start |
-| GET | `/stats` | Learning statistics |
+| `GET` | `/` | Service info |
+| `GET` | `/health` | Health check |
+| `GET` | `/ready` | Readiness check |
+| `GET` | `/status` | Current system metrics |
+| `POST` | `/ask` | Check capacity for task |
+| `POST` | `/task/start` | Notify task start |
+| `GET` | `/stats` | Task statistics |
 
-## Configuration
+## 🖥️ TUI Dashboard
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  CAPFOX DASHBOARD                          ↻ 1s │ q:quit r:ref │
+├─────────────────────────────────────────────────────────────────┤
+│  CPU [████████████░░░░░░░░] 65.2%    Memory [██████░░░░] 48.3%  │
+├─────────────────────────────────────────────────────────────────┤
+│  GPU 0: NVIDIA RTX 4090                                         │
+│  Usage [████████░░░░] 35.0%    VRAM [██████████░░] 12.4/24.0 GB │
+├─────────────────────────────────────────────────────────────────┤
+│  Task Statistics                                                │
+│  Task              │ Count │ CPU Δ  │ Mem Δ  │ GPU Δ           │
+│  video_encoding    │   142 │ +15.2% │  +8.3% │ +45.0%          │
+│  ml_training       │    53 │  +2.8% │ +12.5% │ +68.4%          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+```bash
+capfox tui --refresh 500ms
+```
+
+## 🔧 CLI Commands
+
+```bash
+capfox start    # Start the server
+capfox stop     # Stop the server
+capfox status   # Show system status
+capfox stats    # Show task statistics
+capfox ask      # Check task capacity
+capfox reload   # Reload configuration
+capfox tui      # Open TUI dashboard
+capfox config   # Show current config
+```
+
+## ⚙️ Configuration
 
 ```yaml
 server:
   host: "0.0.0.0"
   port: 8080
-  pid_file: "/var/run/capfox.pid"
-
-auth:
-  enabled: false
-  user: "admin"
-  password: "secret"
 
 thresholds:
   cpu:
@@ -70,79 +168,58 @@ thresholds:
     max_percent: 85
   gpu:
     max_percent: 90
-  vram:
-    max_percent: 90
   storage:
     min_free_gb: 10
+
+decision:
+  strategy: "predictive"  # threshold, predictive, conservative, queue_aware
+  model: "linear"         # none, moving_average, linear, polynomial, gradient_boosting
+  min_observations: 10
+  safety_buffer_percent: 10
 
 monitoring:
   interval_ms: 1000
   paths:
     - "/"
 
-persistence:
-  data_dir: "./data"
-  flush_interval_sec: 60
-
 logging:
   level: "info"
-  format: "text"
-
-learning:
-  model: "moving_average"
-  observation_delay_sec: 5
+  format: "json"
 ```
 
-## Example Usage
+See [configs/capfox.example.yaml](configs/capfox.example.yaml) for full configuration.
 
-### Check if task can run
+### Hot Reload
 
 ```bash
-# CLI
-capfox ask video_encoding --complexity 100 --reason
-
-# curl
-curl -X POST http://localhost:8080/ask \
-  -H "Content-Type: application/json" \
-  -d '{"task": "video_encoding", "complexity": 100}'
-```
-
-Response:
-```json
-{"allowed": true}
-```
-
-Or if denied:
-```json
-{"allowed": false, "reasons": ["cpu_overload", "memory_overload"]}
-```
-
-### Notify task start
-
-```bash
-capfox notify ml_training --complexity 500
-```
-
-### Get statistics
-
-```bash
-capfox stats
-capfox stats ml_training
-```
-
-## Hot Reload
-
-```bash
-# Edit config file, then:
+# Edit config, then:
 capfox reload
 
-# Or send SIGHUP directly:
+# Or send SIGHUP:
 kill -HUP $(cat /var/run/capfox.pid)
 ```
 
-Reloadable settings: auth, thresholds.
-Non-reloadable (require restart): host, port.
+**Reloadable:** auth, thresholds
+**Requires restart:** host, port
 
-## License
+## 🏗️ Architecture
 
-MIT
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   Monitors  │───▶│  Aggregator │───▶│  Capacity   │
+│ CPU/Mem/GPU │    │             │    │  Manager    │
+└─────────────┘    └─────────────┘    └──────┬──────┘
+                                             │
+┌─────────────┐    ┌─────────────┐    ┌──────▼──────┐
+│  Learning   │◀───│  Decision   │◀───│   Server    │
+│   Engine    │    │   Engine    │    │  (REST API) │
+└─────────────┘    └─────────────┘    └─────────────┘
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## 📄 License
+
+MIT License — see [LICENSE](LICENSE) for details.
