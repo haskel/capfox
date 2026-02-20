@@ -149,10 +149,41 @@ capfox stop     # Stop the server
 capfox status   # Show system status
 capfox stats    # Show task statistics
 capfox ask      # Check task capacity
+capfox run      # Run command if capacity available
+capfox notify   # Notify server about task start
 capfox reload   # Reload configuration
 capfox tui      # Open TUI dashboard
 capfox config   # Show current config
 ```
+
+### Run Command
+
+The `run` command works like `time` or `nice` — wrap any command with `capfox run` to check capacity before execution:
+
+```bash
+# Basic usage
+capfox run ./script.sh
+
+# With task name and complexity
+capfox run --task ml_training --complexity 100 python train.py
+
+# With resource estimates
+capfox run --cpu 50 --mem 30 ./heavy.sh
+
+# Quiet mode (no capfox output)
+capfox run --quiet ./script.sh
+
+# Show denial reasons
+capfox run --reason ./heavy.sh
+```
+
+**Exit codes:**
+| Code | Meaning |
+|------|---------|
+| 0-125 | Command's exit code |
+| 75 | No capacity available (EX_TEMPFAIL) |
+| 126 | Command not executable |
+| 127 | Command not found |
 
 ## ⚙️ Configuration
 
