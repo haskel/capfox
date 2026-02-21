@@ -227,3 +227,76 @@ func TestAggregator_StopIdempotent(t *testing.T) {
 		}
 	}
 }
+
+func TestAggregator_InjectMetrics_NegativeGPUIndex(t *testing.T) {
+	monitors := []Monitor{
+		&mockMonitor{
+			name: "cpu",
+			data: &CPUState{UsagePercent: 50.0},
+		},
+	}
+
+	agg := NewAggregator(monitors, time.Second, testLogger())
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if err := agg.Start(ctx); err != nil {
+		t.Fatalf("failed to start: %v", err)
+	}
+	defer func() { _ = agg.Stop() }()
+
+	// Test negative GPU index returns error
+	gpuUsage := 50.0
+	err := agg.InjectMetrics(&InjectedMetrics{
+		GPUIndex:  -1,
+		GPUUsage:  &gpuUsage,
+	})
+
+	if err == nil {
+		t.Fatal("expected error for negative gpu_index, got nil")
+	}
+
+	expectedMsg := "gpu_index must be >= 0, got -1"
+	if err.Error() != expectedMsg {
+		t.Errorf("expected error message %q, got %q", expectedMsg, err.Error())
+	}
+}
+
+func TestAggregator_InjectMetrics_ValidGPUIndex(t *testing.T) {
+	monitors := []Monitor{
+		&mockMonitor{
+			name: "cpu",
+			data: &CPUState{UsagePercent: 50.0},
+		},
+	}
+
+	agg := NewAggregator(monitors, time.Second, testLogger())
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if err := agg.Start(ctx); err != nil {
+		t.Fatalf("failed to start: %v", err)
+	}
+	defer func() { _ = agg.Stop() }()
+
+	// Test valid GPU index (0) does not return error
+	gpuUsage := 75.0
+	err := agg.InjectMetrics(&InjectedMetrics{
+		GPUIndex:  0,
+		GPUUsage:  &gpuUsage,
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error for valid gpu_index: %v", err)
+	}
+
+	state := agg.GetState()
+	if len(state.GPUs) == 0 {
+		t.Fatal("expected at least one GPU after injection")
+	}
+	if state.GPUs[0].UsagePercent != 75.0 {
+		t.Errorf("expected GPU usage 75.0, got %f", state.GPUs[0].UsagePercent)
+	}
+}

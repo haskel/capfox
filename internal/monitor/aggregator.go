@@ -3,6 +3,7 @@ package monitor
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -99,7 +100,12 @@ type InjectedMetrics struct {
 
 // InjectMetrics overrides current metrics with injected values.
 // Only non-nil fields are applied. Used for testing/debugging.
-func (a *Aggregator) InjectMetrics(metrics *InjectedMetrics) {
+// Returns an error if gpu_index is negative.
+func (a *Aggregator) InjectMetrics(metrics *InjectedMetrics) error {
+	if metrics.GPUIndex < 0 {
+		return fmt.Errorf("gpu_index must be >= 0, got %d", metrics.GPUIndex)
+	}
+
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
@@ -149,6 +155,8 @@ func (a *Aggregator) InjectMetrics(metrics *InjectedMetrics) {
 		"gpu_usage", metrics.GPUUsage,
 		"vram_usage", metrics.VRAMUsage,
 	)
+
+	return nil
 }
 
 func (a *Aggregator) runLoop(ctx context.Context) {

@@ -34,7 +34,10 @@ func (s *Server) handleInjectMetrics(w http.ResponseWriter, r *http.Request) {
 		GPUIndex:  req.GPUIndex,
 	}
 
-	s.aggregator.InjectMetrics(metrics)
+	if err := s.aggregator.InjectMetrics(metrics); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	s.logger.Info("metrics injected via debug endpoint",
 		"cpu", req.CPU,
