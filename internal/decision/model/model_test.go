@@ -12,8 +12,6 @@ func TestModelTypeIsValid(t *testing.T) {
 		{ModelTypeNone, true},
 		{ModelTypeMovingAverage, true},
 		{ModelTypeLinear, true},
-		{ModelTypePolynomial, true},
-		{ModelTypeGradientBoost, true},
 		{ModelType("invalid"), false},
 		{ModelType(""), false},
 	}
@@ -36,8 +34,6 @@ func TestModelTypeString(t *testing.T) {
 		{ModelTypeNone, "none"},
 		{ModelTypeMovingAverage, "moving_average"},
 		{ModelTypeLinear, "linear"},
-		{ModelTypePolynomial, "polynomial"},
-		{ModelTypeGradientBoost, "gradient_boosting"},
 	}
 
 	for _, tt := range tests {

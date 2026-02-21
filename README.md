@@ -11,7 +11,7 @@ capfox monitors system resources (CPU, Memory, GPU, Storage) and predicts whethe
 ## ✨ Features
 
 - **Real-time Monitoring** — CPU, Memory, GPU, VRAM, Storage, Processes
-- **Predictive Capacity Planning** — ML models (Linear, Polynomial, Gradient Boosting)
+- **Predictive Capacity Planning** — Statistical models (Linear Regression, Moving Average)
 - **Task Impact Learning** — Learns resource impact of task types over time
 - **Decision Strategies** — Threshold, Predictive, Conservative, Queue-aware
 - **REST API** — Simple HTTP API for integration
@@ -204,7 +204,7 @@ thresholds:
 
 decision:
   strategy: "predictive"  # threshold, predictive, conservative, queue_aware
-  model: "linear"         # none, moving_average, linear, polynomial, gradient_boosting
+  model: "linear"         # none, moving_average, linear
   min_observations: 10
   safety_buffer_percent: 10
 

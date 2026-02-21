@@ -65,8 +65,6 @@ decision:
   # - none: no prediction (for threshold strategy)
   # - moving_average: simple average (doesn't use complexity)
   # - linear: linear regression (complexity affects prediction)
-  # - polynomial: polynomial regression
-  # - gradient_boosting: ML-based (batch training)
   model: "linear"
 
   # Fallback when insufficient data for prediction
@@ -83,13 +81,3 @@ decision:
   model_params:
     # Moving average smoothing factor (0.1-0.3)
     alpha: 0.2
-
-    # Polynomial degree (2-3)
-    degree: 2
-
-    # Gradient boosting parameters
-    n_estimators: 100
-    max_depth: 5
-    retrain_interval: "1h"
-    min_retrain_samples: 50
-    max_buffer_size: 10000

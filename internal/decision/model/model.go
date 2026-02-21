@@ -32,18 +32,15 @@ func (t LearningType) String() string {
 type ModelType string
 
 const (
-	ModelTypeNone           ModelType = "none"
-	ModelTypeMovingAverage  ModelType = "moving_average"
-	ModelTypeLinear         ModelType = "linear"
-	ModelTypePolynomial     ModelType = "polynomial"
-	ModelTypeGradientBoost  ModelType = "gradient_boosting"
+	ModelTypeNone          ModelType = "none"
+	ModelTypeMovingAverage ModelType = "moving_average"
+	ModelTypeLinear        ModelType = "linear"
 )
 
 // IsValid checks if the model type is valid.
 func (m ModelType) IsValid() bool {
 	switch m {
-	case ModelTypeNone, ModelTypeMovingAverage, ModelTypeLinear,
-		ModelTypePolynomial, ModelTypeGradientBoost:
+	case ModelTypeNone, ModelTypeMovingAverage, ModelTypeLinear:
 		return true
 	}
 	return false
@@ -104,7 +101,7 @@ type TaskStats struct {
 	AvgGPUDelta  float64 `json:"avg_gpu_delta,omitempty"`
 	AvgVRAMDelta float64 `json:"avg_vram_delta,omitempty"`
 
-	// For linear/polynomial models
+	// For linear regression model
 	Coefficients *Coefficients `json:"coefficients,omitempty"`
 }
 

@@ -57,13 +57,7 @@ func Default() *Config {
 			MinObservations:     5,
 			SafetyBufferPercent: 10.0,
 			ModelParams: ModelParamsConfig{
-				Alpha:             0.2,
-				Degree:            2,
-				NEstimators:       100,
-				MaxDepth:          5,
-				RetrainInterval:   "1h",
-				MinRetrainSamples: 50,
-				MaxBufferSize:     10000,
+				Alpha: 0.2,
 			},
 		},
 	}

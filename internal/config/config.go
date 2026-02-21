@@ -110,7 +110,7 @@ type DecisionConfig struct {
 	// Strategy type: threshold, predictive, conservative, queue_aware
 	Strategy string `yaml:"strategy"`
 
-	// Model type: none, moving_average, linear, polynomial, gradient_boosting
+	// Model type: none, moving_average, linear
 	Model string `yaml:"model"`
 
 	// Fallback strategy when insufficient data
@@ -130,16 +130,6 @@ type DecisionConfig struct {
 type ModelParamsConfig struct {
 	// MovingAverage: smoothing factor (0.1-0.3)
 	Alpha float64 `yaml:"alpha"`
-
-	// Polynomial: degree (2-3)
-	Degree int `yaml:"degree"`
-
-	// GradientBoosting
-	NEstimators       int    `yaml:"n_estimators"`
-	MaxDepth          int    `yaml:"max_depth"`
-	RetrainInterval   string `yaml:"retrain_interval"`
-	MinRetrainSamples int    `yaml:"min_retrain_samples"`
-	MaxBufferSize     int    `yaml:"max_buffer_size"`
 }
 
 func (c *Config) MonitoringInterval() time.Duration {

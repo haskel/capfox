@@ -2,7 +2,6 @@ package model
 
 import (
 	"testing"
-	"time"
 )
 
 func TestFactoryCreateByType(t *testing.T) {
@@ -10,11 +9,6 @@ func TestFactoryCreateByType(t *testing.T) {
 		Type:            ModelTypeLinear,
 		MinObservations: 5,
 		Alpha:           0.2,
-		Degree:          2,
-		NEstimators:     100,
-		MaxDepth:        5,
-		RetrainInterval: time.Hour,
-		MaxBufferSize:   10000,
 	})
 
 	tests := []struct {
@@ -26,8 +20,6 @@ func TestFactoryCreateByType(t *testing.T) {
 		{ModelTypeNone, false, "none", LearningTypeOnline},
 		{ModelTypeMovingAverage, false, "moving_average", LearningTypeOnline},
 		{ModelTypeLinear, false, "linear", LearningTypeOnline},
-		{ModelTypePolynomial, false, "polynomial", LearningTypeOnline},
-		{ModelTypeGradientBoost, false, "gradient_boosting", LearningTypeBatch},
 		{ModelType("invalid"), true, "", LearningTypeOnline},
 	}
 
@@ -116,10 +108,6 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.Alpha != 0.2 {
 		t.Errorf("expected Alpha 0.2, got %f", cfg.Alpha)
 	}
-
-	if cfg.RetrainInterval != time.Hour {
-		t.Errorf("expected RetrainInterval 1h, got %v", cfg.RetrainInterval)
-	}
 }
 
 func TestMovingAverageModelCreation(t *testing.T) {
@@ -148,33 +136,5 @@ func TestLinearModelCreation(t *testing.T) {
 	}
 	if m.minObservations != 10 {
 		t.Errorf("expected minObservations 10, got %d", m.minObservations)
-	}
-}
-
-func TestPolynomialModelCreation(t *testing.T) {
-	m := NewPolynomialModel(3, 10)
-	if m.Name() != "polynomial" {
-		t.Errorf("expected name 'polynomial', got '%s'", m.Name())
-	}
-	if m.degree != 3 {
-		t.Errorf("expected degree 3, got %d", m.degree)
-	}
-}
-
-func TestGradientBoostModelCreation(t *testing.T) {
-	cfg := GradientBoostConfig{
-		NEstimators:     50,
-		MaxDepth:        3,
-		RetrainInterval: 30 * time.Minute,
-		MinObservations: 20,
-		MaxBufferSize:   5000,
-	}
-	m := NewGradientBoostModel(cfg)
-
-	if m.Name() != "gradient_boosting" {
-		t.Errorf("expected name 'gradient_boosting', got '%s'", m.Name())
-	}
-	if m.LearningType() != LearningTypeBatch {
-		t.Error("expected batch learning type")
 	}
 }
