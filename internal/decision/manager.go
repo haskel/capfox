@@ -63,7 +63,9 @@ func (m *Manager) Decide(task string, complexity int, resources *ResourceEstimat
 	// Acquire read lock for thresholds and pending tasks
 	m.mu.RLock()
 	thresholds := m.thresholds
-	pendingTasks := m.pendingTasks
+	// Copy slice contents to avoid race condition after unlock
+	pendingTasks := make([]PendingTask, len(m.pendingTasks))
+	copy(pendingTasks, m.pendingTasks)
 	m.mu.RUnlock()
 
 	// Build context
