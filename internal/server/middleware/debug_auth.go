@@ -32,23 +32,27 @@ func DebugAuth(config *DebugAuthConfig) Middleware {
 			}
 
 			// Fall back to Basic Auth if enabled
-			if config.FallbackAuthConfig != nil && config.FallbackAuthConfig.Enabled {
-				user, pass, ok := r.BasicAuth()
-				if !ok {
-					unauthorizedDebug(w)
+			if config.FallbackAuthConfig != nil {
+				// Use thread-safe getter to avoid data race during config hot reload
+				enabled, configUser, configPass := config.FallbackAuthConfig.get()
+				if enabled {
+					user, pass, ok := r.BasicAuth()
+					if !ok {
+						unauthorizedDebug(w)
+						return
+					}
+
+					userMatch := subtle.ConstantTimeCompare([]byte(user), []byte(configUser)) == 1
+					passMatch := subtle.ConstantTimeCompare([]byte(pass), []byte(configPass)) == 1
+
+					if !userMatch || !passMatch {
+						unauthorizedDebug(w)
+						return
+					}
+
+					next.ServeHTTP(w, r)
 					return
 				}
-
-				userMatch := subtle.ConstantTimeCompare([]byte(user), []byte(config.FallbackAuthConfig.User)) == 1
-				passMatch := subtle.ConstantTimeCompare([]byte(pass), []byte(config.FallbackAuthConfig.Password)) == 1
-
-				if !userMatch || !passMatch {
-					unauthorizedDebug(w)
-					return
-				}
-
-				next.ServeHTTP(w, r)
-				return
 			}
 
 			// No authentication configured - block access
