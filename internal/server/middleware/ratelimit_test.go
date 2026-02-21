@@ -143,11 +143,12 @@ func TestPerIPRateLimit_SeparateLimitersPerIP(t *testing.T) {
 	}
 }
 
-func TestPerIPRateLimit_XForwardedFor(t *testing.T) {
+func TestPerIPRateLimit_XForwardedFor_TrustProxy(t *testing.T) {
 	config := &PerIPRateLimitConfig{
 		Enabled:           true,
 		RequestsPerSecond: 1,
 		Burst:             1,
+		TrustProxy:        true,
 	}
 
 	handler := PerIPRateLimit(config)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -172,6 +173,42 @@ func TestPerIPRateLimit_XForwardedFor(t *testing.T) {
 
 	if w.Code != http.StatusTooManyRequests {
 		t.Errorf("second request: expected status 429, got %d", w.Code)
+	}
+}
+
+func TestPerIPRateLimit_XForwardedFor_NoTrustProxy(t *testing.T) {
+	config := &PerIPRateLimitConfig{
+		Enabled:           true,
+		RequestsPerSecond: 1,
+		Burst:             1,
+		TrustProxy:        false,
+	}
+
+	handler := PerIPRateLimit(config)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	// Request with spoofed X-Forwarded-For but same RemoteAddr
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req.RemoteAddr = "192.168.1.1:12345"
+	req.Header.Set("X-Forwarded-For", "10.0.0.1")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("first request: expected status 200, got %d", w.Code)
+	}
+
+	// Second request with DIFFERENT X-Forwarded-For but SAME RemoteAddr
+	// Should still be rate limited because TrustProxy=false
+	req = httptest.NewRequest(http.MethodGet, "/test", nil)
+	req.RemoteAddr = "192.168.1.1:12345"
+	req.Header.Set("X-Forwarded-For", "10.0.0.2") // Different spoofed IP
+	w = httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusTooManyRequests {
+		t.Errorf("second request: expected status 429 (X-Forwarded-For should be ignored), got %d", w.Code)
 	}
 }
 
@@ -225,27 +262,47 @@ func TestGetClientIP(t *testing.T) {
 		xff        string
 		xri        string
 		remoteAddr string
+		trustProxy bool
 		expected   string
 	}{
 		{
-			name:       "X-Forwarded-For takes priority",
+			name:       "TrustProxy=true: X-Forwarded-For takes priority",
 			xff:        "10.0.0.1",
 			xri:        "10.0.0.2",
 			remoteAddr: "10.0.0.3:12345",
+			trustProxy: true,
 			expected:   "10.0.0.1",
 		},
 		{
-			name:       "X-Real-IP second priority",
+			name:       "TrustProxy=true: X-Real-IP second priority",
 			xff:        "",
 			xri:        "10.0.0.2",
 			remoteAddr: "10.0.0.3:12345",
+			trustProxy: true,
 			expected:   "10.0.0.2",
 		},
 		{
-			name:       "RemoteAddr fallback",
+			name:       "TrustProxy=true: RemoteAddr fallback",
 			xff:        "",
 			xri:        "",
 			remoteAddr: "10.0.0.3:12345",
+			trustProxy: true,
+			expected:   "10.0.0.3:12345",
+		},
+		{
+			name:       "TrustProxy=false: ignores X-Forwarded-For",
+			xff:        "10.0.0.1",
+			xri:        "10.0.0.2",
+			remoteAddr: "10.0.0.3:12345",
+			trustProxy: false,
+			expected:   "10.0.0.3:12345",
+		},
+		{
+			name:       "TrustProxy=false: ignores X-Real-IP",
+			xff:        "",
+			xri:        "10.0.0.2",
+			remoteAddr: "10.0.0.3:12345",
+			trustProxy: false,
 			expected:   "10.0.0.3:12345",
 		},
 	}
@@ -261,7 +318,7 @@ func TestGetClientIP(t *testing.T) {
 				req.Header.Set("X-Real-IP", tt.xri)
 			}
 
-			ip := getClientIP(req)
+			ip := getClientIP(req, tt.trustProxy)
 			if ip != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, ip)
 			}

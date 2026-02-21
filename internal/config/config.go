@@ -45,6 +45,10 @@ type RateLimitConfig struct {
 	Enabled           bool    `yaml:"enabled"`
 	RequestsPerSecond float64 `yaml:"requests_per_second"`
 	Burst             int     `yaml:"burst"`
+	// TrustProxy enables trusting X-Forwarded-For and X-Real-IP headers.
+	// Only enable if behind a trusted reverse proxy.
+	// When false, only r.RemoteAddr is used for client IP detection.
+	TrustProxy bool `yaml:"trust_proxy"`
 }
 
 type ProfilingConfig struct {

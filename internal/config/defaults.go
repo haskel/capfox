@@ -10,6 +10,7 @@ func Default() *Config {
 				Enabled:           false,
 				RequestsPerSecond: 100,
 				Burst:             200,
+				TrustProxy:        false,
 			},
 		},
 		Auth: AuthConfig{

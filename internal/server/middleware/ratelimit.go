@@ -49,6 +49,9 @@ type PerIPRateLimitConfig struct {
 	Burst int
 	// Enabled controls whether rate limiting is active.
 	Enabled bool
+	// TrustProxy enables trusting X-Forwarded-For and X-Real-IP headers.
+	// Only enable if behind a trusted reverse proxy.
+	TrustProxy bool
 }
 
 const (
@@ -163,10 +166,11 @@ func PerIPRateLimit(config *PerIPRateLimitConfig) Middleware {
 	}
 
 	ipLimiter := newPerIPLimiter(config.RequestsPerSecond, config.Burst)
+	trustProxy := config.TrustProxy
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ip := getClientIP(r)
+			ip := getClientIP(r, trustProxy)
 			limiter := ipLimiter.getLimiter(ip)
 
 			if !limiter.Allow() {
@@ -179,15 +183,19 @@ func PerIPRateLimit(config *PerIPRateLimitConfig) Middleware {
 }
 
 // getClientIP extracts the client IP from the request.
-func getClientIP(r *http.Request) string {
-	// Check X-Forwarded-For header first (for proxied requests)
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		return xff
+// If trustProxy is true, X-Forwarded-For and X-Real-IP headers are trusted.
+// If trustProxy is false, only r.RemoteAddr is used (secure default).
+func getClientIP(r *http.Request, trustProxy bool) string {
+	if trustProxy {
+		// Check X-Forwarded-For header first (for proxied requests)
+		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+			return xff
+		}
+		// Check X-Real-IP header
+		if xri := r.Header.Get("X-Real-IP"); xri != "" {
+			return xri
+		}
 	}
-	// Check X-Real-IP header
-	if xri := r.Header.Get("X-Real-IP"); xri != "" {
-		return xri
-	}
-	// Fall back to RemoteAddr
+	// Fall back to RemoteAddr (always used when trustProxy is false)
 	return r.RemoteAddr
 }
