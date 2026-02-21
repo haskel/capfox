@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/haskel/capfox/internal/decision"
 )
@@ -169,7 +170,7 @@ func (s *Server) handleSchedulerStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !stats.LastRetrain.IsZero() {
-		resp.LastRetrain = stats.LastRetrain.Format("2006-01-02T15:04:05Z")
+		resp.LastRetrain = stats.LastRetrain.UTC().Format(time.RFC3339)
 	}
 
 	s.writeJSON(w, http.StatusOK, resp)
