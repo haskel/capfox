@@ -110,9 +110,9 @@ func runAsk(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Exit with non-zero code if denied
+	// Exit with 75 (EX_TEMPFAIL) if denied - consistent with 'run' command
 	if status == http.StatusServiceUnavailable {
-		os.Exit(1)
+		os.Exit(75)
 	}
 
 	return nil

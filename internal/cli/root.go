@@ -42,7 +42,7 @@ func init() {
 	// Global flags
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file path")
 	rootCmd.PersistentFlags().StringVar(&host, "host", "localhost", "server host")
-	rootCmd.PersistentFlags().IntVarP(&port, "port", "p", 8080, "server port")
+	rootCmd.PersistentFlags().IntVarP(&port, "port", "p", 9329, "server port")
 	rootCmd.PersistentFlags().BoolVar(&jsonOut, "json", false, "output in JSON format")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().StringVar(&user, "user", "", "auth username")

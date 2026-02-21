@@ -10,7 +10,7 @@ Available for all commands:
 |------|-------|------|---------|-------------|
 | `--config` | `-c` | string | | Config file path |
 | `--host` | | string | `localhost` | Server host |
-| `--port` | `-p` | int | `8080` | Server port |
+| `--port` | `-p` | int | `9329` | Server port |
 | `--json` | | bool | `false` | Output in JSON format |
 | `--verbose` | `-v` | bool | `false` | Verbose output |
 | `--user` | | string | | Auth username |
@@ -281,15 +281,16 @@ capfox reload --pid-file /var/run/capfox.pid
 Sends SIGHUP to the server process. The server validates the new config before applying.
 
 **What reloads:**
-- Thresholds
-- Auth settings
-- Logging level
-- Decision engine settings
+- Thresholds (CPU, memory, GPU, VRAM, storage)
+- Auth settings (enabled, user, password)
 
 **What doesn't reload (requires restart):**
 - Server host/port
-- Monitoring paths
+- Monitoring interval/paths
 - Data directory
+- Rate limiting
+- Decision engine settings
+- Logging level
 
 ---
 

@@ -4,7 +4,7 @@ func Default() *Config {
 	return &Config{
 		Server: ServerConfig{
 			Host:    "0.0.0.0",
-			Port:    8080,
+			Port:    9329,
 			PIDFile: "/var/run/capfox.pid",
 			RateLimit: RateLimitConfig{
 				Enabled:           false,

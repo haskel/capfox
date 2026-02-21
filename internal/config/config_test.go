@@ -9,8 +9,8 @@ import (
 func TestDefault(t *testing.T) {
 	cfg := Default()
 
-	if cfg.Server.Port != 8080 {
-		t.Errorf("expected default port 8080, got %d", cfg.Server.Port)
+	if cfg.Server.Port != 9329 {
+		t.Errorf("expected default port 9329, got %d", cfg.Server.Port)
 	}
 
 	if cfg.Server.Host != "0.0.0.0" {
@@ -83,13 +83,13 @@ func TestLoadFileNotFound(t *testing.T) {
 func TestLoadOrDefault(t *testing.T) {
 	// Empty path returns defaults
 	cfg := LoadOrDefault("")
-	if cfg.Server.Port != 8080 {
-		t.Errorf("expected default port 8080, got %d", cfg.Server.Port)
+	if cfg.Server.Port != 9329 {
+		t.Errorf("expected default port 9329, got %d", cfg.Server.Port)
 	}
 
 	// Non-existent file returns defaults
 	cfg = LoadOrDefault("/nonexistent/path/config.yaml")
-	if cfg.Server.Port != 8080 {
-		t.Errorf("expected default port 8080, got %d", cfg.Server.Port)
+	if cfg.Server.Port != 9329 {
+		t.Errorf("expected default port 9329, got %d", cfg.Server.Port)
 	}
 }

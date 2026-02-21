@@ -55,7 +55,7 @@ POST /ask
 {"task": "video_encode", "complexity": 30}
 
 → 200 {"allowed": true}
-→ 503 {"allowed": false, "reasons": ["cpu_high"]}
+→ 503 {"allowed": false, "reasons": ["cpu_overload"]}
 ```
 
 **CLI:**
@@ -217,10 +217,10 @@ POST /ask
 {"allowed": true}
 
 → 503 Service Unavailable
-{"allowed": false, "reasons": ["cpu_high"]}
+{"allowed": false, "reasons": ["cpu_overload"]}
 ```
 
-📖 Full API reference: [documentation/api.md](documentation/api.md) · Swagger: `http://localhost:9329/swagger/`
+📖 Full API reference: [documentation/api.md](documentation/api.md)
 
 ### Wrapper
 

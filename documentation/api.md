@@ -2,7 +2,7 @@
 
 **capfox** REST API documentation.
 
-Base URL: `http://localhost:8080`
+Base URL: `http://localhost:9329`
 
 ## Authentication
 
@@ -15,7 +15,7 @@ Authorization: Basic base64(user:password)
 Example:
 
 ```bash
-curl -u admin:secret http://localhost:8080/status
+curl -u admin:secret http://localhost:9329/status
 ```
 
 ---
@@ -89,8 +89,9 @@ GET /status
   },
   "storage": {
     "/": {
+      "used_bytes": 375474995200,
       "total_bytes": 536870912000,
-      "free_bytes": 161395916800
+      "usage_percent": 69.9
     }
   },
   "gpus": [
@@ -100,10 +101,10 @@ GET /status
       "vram_total_bytes": 25769803776
     }
   ],
-  "process": {
-    "total_processes": 342,
-    "total_threads": 1256
-  }
+  "processes": 342,
+  "threads": 1256,
+  "context_switches_per_sec": 12500,
+  "timestamp": "2026-02-21T14:32:15Z"
 }
 ```
 
@@ -162,7 +163,7 @@ Check if a task can run based on current resource availability.
 → 503 Service Unavailable
 {
   "allowed": false,
-  "reasons": ["cpu_high", "memory_high"]
+  "reasons": ["cpu_overload", "memory_overload"]
 }
 ```
 
@@ -170,11 +171,11 @@ Check if a task can run based on current resource availability.
 
 | Code | Description |
 |------|-------------|
-| `cpu_high` | CPU usage exceeds threshold |
-| `memory_high` | Memory usage exceeds threshold |
-| `gpu_high` | GPU usage exceeds threshold |
-| `vram_high` | VRAM usage exceeds threshold |
-| `disk_low` | Disk free space below threshold |
+| `cpu_overload` | CPU usage exceeds threshold |
+| `memory_overload` | Memory usage exceeds threshold |
+| `gpu_overload` | GPU usage exceeds threshold |
+| `vram_overload` | VRAM usage exceeds threshold |
+| `storage_low` | Disk free space below threshold |
 
 ---
 
@@ -309,7 +310,7 @@ Enhanced capacity check with prediction details.
 → 503 Service Unavailable
 {
   "allowed": false,
-  "reasons": ["cpu_high"],
+  "reasons": ["cpu_overload"],
   "predicted": {
     "cpu": 95.5,
     "memory": 82.5

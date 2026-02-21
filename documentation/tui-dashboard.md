@@ -16,7 +16,7 @@ capfox tui --host 10.0.0.1 --port 9329
 |------|------|---------|-------------|
 | `--refresh` | duration | `1s` | Refresh interval |
 | `--host` | string | `localhost` | Server host |
-| `--port` | int | `8080` | Server port |
+| `--port` | int | `9329` | Server port |
 | `--user` | string | | Auth username |
 | `--password` | string | | Auth password |
 

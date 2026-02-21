@@ -16,7 +16,7 @@ Complete configuration reference for **capfox**.
 ```yaml
 server:
   host: "0.0.0.0"
-  port: 8080
+  port: 9329
   pid_file: "/var/run/capfox.pid"
   shutdown_timeout_sec: 25
   rate_limit:
@@ -84,7 +84,7 @@ HTTP server configuration.
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `host` | string | `0.0.0.0` | Listen address |
-| `port` | int | `8080` | Listen port (1-65535) |
+| `port` | int | `9329` | Listen port (1-65535) |
 | `pid_file` | string | `/var/run/capfox.pid` | PID file path |
 | `shutdown_timeout_sec` | int | `25` | Graceful shutdown timeout |
 
